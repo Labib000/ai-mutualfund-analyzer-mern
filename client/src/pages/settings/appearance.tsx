@@ -1,0 +1,22 @@
+import AppearanceTabs from '@/components/appearance-tabs';
+import { Head } from '@/components/head';
+import Heading from '@/components/heading';
+
+export default function Appearance() {
+    return (
+        <>
+            <Head title="Appearance settings" />
+
+            <h1 className="sr-only">Appearance settings</h1>
+
+            <div className="space-y-6">
+                <Heading
+                    variant="small"
+                    title="Appearance settings"
+                    description="Update the appearance settings for your account"
+                />
+                <AppearanceTabs />
+            </div>
+        </>
+    );
+}

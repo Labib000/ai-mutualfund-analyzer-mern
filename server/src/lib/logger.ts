@@ -3,11 +3,9 @@ import path from 'node:path';
 import { pino } from 'pino';
 
 import type { Config } from '../config.js';
+import { REPO_ROOT } from './paths.js';
 
 export type Logger = pino.Logger;
-
-/** Repo root: this file is server/{src,dist}/lib/logger.*. */
-const REPO_ROOT = path.resolve(import.meta.dirname, '../../..');
 
 /** Absolute log-file path, or null when file logging is off. */
 export function resolveLogFile(

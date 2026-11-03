@@ -1,3 +1,5 @@
+import type { ApiErrorBody } from '@hisaab/shared';
+
 /** Error thrown for non-2xx API responses. `fieldErrors` maps form fields to messages (422). */
 export class ApiError extends Error {
     override name = 'ApiError';
@@ -13,6 +15,13 @@ export class ApiError extends Error {
 }
 
 type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
+
+let onUnauthenticated: (() => void) | undefined;
+
+/** Called whenever the API answers 401 (session expired or signed out elsewhere). */
+export function setUnauthenticatedHandler(handler: () => void): void {
+    onUnauthenticated = handler;
+}
 
 /** fetch wrapper for /api: same-origin cookies, JSON in and out, typed errors. */
 export async function api<T>(
@@ -43,10 +52,9 @@ export async function api<T>(
         : null;
 
     if (!response.ok) {
-        const payload = (data ?? {}) as {
-            message?: string;
-            errors?: Record<string, string>;
-        };
+        const payload = (data ?? {}) as Partial<ApiErrorBody>;
+
+        if (response.status === 401) onUnauthenticated?.();
 
         throw new ApiError(
             response.status,

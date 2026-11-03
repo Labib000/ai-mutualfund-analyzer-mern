@@ -11,10 +11,11 @@
         "dev": "npm run build -w shared && concurrently -k -n shared,server,client -c gray,cyan,magenta \"npm run dev -w shared\" \"npm run dev -w server\" \"npm run dev -w client\"",
         "build": "npm run build -w shared && npm run build -w client && npm run build -w server",
         "start": "node --env-file-if-exists=.env server/dist/index.js",
-        "test": "npm run build -w shared && npm run test -w server",
+        "test": "npm run build -w shared && npm run test -w server && npm run test -w client",
         "typecheck": "npm run build -w shared && npm run typecheck --workspaces --if-present",
         "check": "vp check",
-        "check:fix": "vp check --fix"
+        "check:fix": "vp check --fix",
+        "db:seed": "npm run build -w shared && npm run db:seed -w server"
     },
     "devDependencies": {
         "concurrently": "^10.0.3",

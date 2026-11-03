@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { connectDb } from '../src/db.js';
 import { setTestNow } from '../src/lib/today.js';
-import { makeTestApp } from './support/app.js';
+import { APP_URL, makeTestApp } from './support/app.js';
 import { testDbUri, useTestDb } from './support/db.js';
 
 describe('GET /api/health', () => {
@@ -15,7 +15,9 @@ describe('GET /api/health', () => {
     it('reports ok when MongoDB answers', async () => {
         setTestNow('2026-10-08T12:00:00+05:30');
 
-        const res = await request(makeTestApp()).get('/api/health').expect(200);
+        const res = await request(makeTestApp().app)
+            .get('/api/health')
+            .expect(200);
 
         expect(healthResponseSchema.parse(res.body)).toEqual({
             status: 'ok',
@@ -50,7 +52,7 @@ describe('GET /api/health', () => {
         await mongoose.disconnect();
 
         try {
-            const res = await request(makeTestApp())
+            const res = await request(makeTestApp().app)
                 .get('/api/health')
                 .expect(503);
 
@@ -63,21 +65,24 @@ describe('GET /api/health', () => {
 
 describe('API basics', () => {
     it('returns JSON 404 for unknown API routes', async () => {
-        const res = await request(makeTestApp()).get('/api/nope').expect(404);
+        const res = await request(makeTestApp().app)
+            .get('/api/nope')
+            .expect(404);
 
         expect(res.body).toEqual({ message: 'Not found.' });
     });
 
     it('rejects malformed JSON with 400, not 500', async () => {
-        await request(makeTestApp())
-            .post('/api/health')
+        await request(makeTestApp().app)
+            .post('/api/auth/login')
+            .set('Origin', APP_URL)
             .set('Content-Type', 'application/json')
             .send('{bad json')
             .expect(400);
     });
 
     it('sets security headers and hides Express', async () => {
-        const res = await request(makeTestApp()).get('/api/nope');
+        const res = await request(makeTestApp().app).get('/api/nope');
 
         expect(res.headers['x-powered-by']).toBeUndefined();
         expect(res.headers['x-content-type-options']).toBe('nosniff');

@@ -7,19 +7,27 @@
         "build": "tsc -p tsconfig.build.json",
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "db:seed": "tsx --env-file-if-exists=../.env src/cli/seed.ts"
     },
     "dependencies": {
         "@hisaab/shared": "*",
+        "argon2": "^0.45.2",
+        "connect-mongo": "^6.0.0",
         "express": "^5.3.0",
+        "express-rate-limit": "^8.7.3",
+        "express-session": "^1.19.0",
         "helmet": "^8.3.0",
         "mongoose": "^9.11.4",
+        "nodemailer": "^10.3.1",
         "pino": "^10.4.0",
         "zod": "^4.6.7"
     },
     "devDependencies": {
         "@types/express": "^5.0.6",
+        "@types/express-session": "^1.19.0",
         "@types/node": "^24.0.0",
+        "@types/nodemailer": "^8.0.2",
         "@types/supertest": "^7.2.1",
         "mongodb-memory-server": "^11.3.0",
         "supertest": "^7.3.1",

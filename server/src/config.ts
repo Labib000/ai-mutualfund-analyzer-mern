@@ -31,8 +31,12 @@ const envSchema = z.object({
      */
     LOG_FILE: z.string().trim().optional(),
 
-    // Required from Phase 1 / 2a / 4 onwards; optional while unused.
-    SESSION_SECRET: optionalString,
+    SESSION_SECRET: z
+        .string({ error: 'SESSION_SECRET is required (see .env.example)' })
+        .trim()
+        .min(32, 'SESSION_SECRET must be at least 32 characters'),
+
+    // Required from Phase 2a / 4 onwards; optional while unused.
     CRON_SECRET: optionalString,
     AI_PROVIDER: optionalString,
     AI_API_KEY: optionalString,

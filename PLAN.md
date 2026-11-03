@@ -6,6 +6,8 @@ A rebuild of Hisaab, the personal mutual fund tracker for Indian investors, on *
 >
 > **Revision 2 (2026-11-03).** Approved: the package list, starting with a fresh database (no data migration), and 2FA and passkeys in the last phase.
 >
+> **Revision 4 (2026-11-03).** Phase 1 decisions: emails go to `logs/mail.log` when SMTP isn't configured; forgot-password always gives the same answer (no account enumeration, a deliberate change from Laravel); the password-confirmation screen moves to Phase 6 with 2FA. Approved `@types/express-session` and `@types/nodemailer`.
+>
 > **Revision 3 (2026-11-03).** Phase 0 runs on localhost only; the Hostinger check moves to Phase 6. Kept `vite-plus` for lint and format. Approved the Phase 0 tooling and UI packages (below).
 
 ---
@@ -160,7 +162,9 @@ As a guard against two requests racing on the same holding, each write also incr
 - Register, log in and log out, email verification, forgot and reset password, and a profile page (name, email, password, delete account).
 - Rate limits on login and reset.
 - App shell port: sidebar with the sliding pill, mobile sheet, header and theme toggle.
-- *Deferred to Phase 6 (decided):* 2FA (TOTP) and passkeys (`@simplewebauthn`). Their packages need approval when we get there.
+- *Deferred to Phase 6 (decided):* 2FA (TOTP), passkeys (`@simplewebauthn`) and the password-confirmation screen. Their packages need approval when we get there.
+- Without `MAIL_*` set, emails are written to `logs/mail.log` (click the links from there).
+- Forgot-password answers the same whether or not the email is registered.
 - **Done when:** the auth flows have Supertest coverage and protected routes redirect correctly.
 
 ### Phase 2: Core tracker (port of Laravel Phase 1)

@@ -4,6 +4,7 @@ import { createApp } from './app.js';
 import { ConfigError, loadConfig } from './config.js';
 import { connectDb, disconnectDb } from './db.js';
 import { createLogger } from './lib/logger.js';
+import { ensureSessionIndexes } from './lib/session.js';
 
 async function main(): Promise<void> {
     let config;
@@ -22,6 +23,7 @@ async function main(): Promise<void> {
 
     try {
         await connectDb(config.MONGODB_URI, logger);
+        await ensureSessionIndexes();
     } catch (error) {
         logger.fatal(
             { err: error },
