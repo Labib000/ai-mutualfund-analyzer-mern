@@ -51,6 +51,16 @@ export default defineConfig({
                             name: 'icons',
                             test: /node_modules[\\/]@fortawesome[\\/]/,
                         },
+                        {
+                            // Shared with Recharts; listed first so it isn't pulled into "charts".
+                            name: 'clsx',
+                            test: /node_modules[\\/]clsx[\\/]/,
+                        },
+                        {
+                            // Recharts and its own dependencies; only the dashboard loads it.
+                            name: 'charts',
+                            test: /node_modules[\\/](recharts|victory-vendor|d3-[a-z-]+|internmap|decimal\.js-light|@reduxjs[\\/]toolkit|react-redux|redux|redux-thunk|reselect|immer|es-toolkit|eventemitter3|tiny-invariant)[\\/]/,
+                        },
                         { name: 'vendor', test: /node_modules[\\/]/ },
                     ],
                 },

@@ -1,4 +1,5 @@
 import {
+    faCalculator,
     faChartPie,
     faComments,
     faPlus,
@@ -45,6 +46,14 @@ const insightItems: NavItem[] = [
     },
 ];
 
+const toolItems: NavItem[] = [
+    {
+        title: 'SIP calculator',
+        href: '/tools/sip-calculator',
+        icon: faCalculator,
+    },
+];
+
 export function AppSidebar() {
     const { isMobile, setOpenMobile } = useSidebar();
 
@@ -80,6 +89,7 @@ export function AppSidebar() {
             <SidebarContent className="gap-1 pt-3">
                 <NavMain label="Overview" items={overviewItems} />
                 <NavMain label="Insights" items={insightItems} />
+                <NavMain label="Tools" items={toolItems} />
 
                 <SidebarGroup className="px-3 pt-4">
                     <SidebarMenu>

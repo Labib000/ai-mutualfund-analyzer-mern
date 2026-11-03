@@ -1,6 +1,8 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 
 import type { Logger } from '../lib/logger.js';
+import { ValidationError } from '../lib/validationError.js';
+import { sendValidationErrors } from './validate.js';
 
 /** JSON 404 for unknown /api routes (never the SPA's index.html). */
 export const apiNotFound: RequestHandler = (_req, res) => {
@@ -11,6 +13,11 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
     return (err, req, res, next) => {
         if (res.headersSent) {
             next(err);
+            return;
+        }
+
+        if (err instanceof ValidationError) {
+            sendValidationErrors(res, err.errors);
             return;
         }
 

@@ -7,6 +7,7 @@ import { loadConfig } from '../../src/config.js';
 import { createLogger } from '../../src/lib/logger.js';
 import { FakeMailer } from '../../src/mail/mailer.js';
 import { User, type UserDoc } from '../../src/models/user.js';
+import type { NavProvider } from '../../src/nav/navProvider.js';
 
 export const APP_URL = 'http://localhost:5173';
 export const TEST_SECRET = 'test-secret-'.padEnd(48, 'x');
@@ -24,7 +25,9 @@ export function testConfig() {
  * A test app with a fake mailer and a stubbed breached-password check.
  * `strict` turns on Laravel's production password rules.
  */
-export function makeTestApp(opts: { strict?: boolean } = {}) {
+export function makeTestApp(
+    opts: { strict?: boolean; navProvider?: NavProvider } = {},
+) {
     const config = testConfig();
     const mailer = new FakeMailer();
     const pwned = vi.fn(async (_password: string) => false);
@@ -34,6 +37,7 @@ export function makeTestApp(opts: { strict?: boolean } = {}) {
         logger: createLogger(config),
         mailer,
         passwordPolicy: { strict: opts.strict ?? false, pwned },
+        navProvider: opts.navProvider,
     });
 
     /** A cookie-keeping client that sends our Origin, like the browser. */

@@ -1,0 +1,61 @@
+Scheme Code;ISIN Div Payout/ ISIN Growth;ISIN Div Reinvestment;Scheme Name;Plan;Option;Net Asset Value;Date
+ 
+Open Ended Schemes(Children’s Fund - Childrens' Fund)
+ 
+Axis Mutual Fund
+ 
+135762;INF846K01WO1;-;Axis Children's Fund;Direct Plan;Growth Option;29.2304;07-Oct-2026
+135763;INF846K01WS2;INF846K01WQ6;Axis Children's Fund;Direct Plan;IDCW Option;26.9773;07-Oct-2026
+ 
+Open Ended Schemes(Equity Schemes - Large Cap Fund)
+ 
+Groww Mutual Fund
+ 
+119133;INF666M01600;-;Groww Large Cap Fund;Direct Plan;Growth;49.56;07-Oct-2026
+ 
+Open Ended Schemes(Equity Scheme - Large Cap Fund)
+ 
+Aditya Birla Sun Life Mutual Fund
+ 
+119527;INF209K01YX9;INF209K01YW1;Aditya Birla Sun Life Large Cap Fund;;;88.11;07-Oct-2026
+ 
+Open Ended Schemes(Exchange Traded Funds (ETFs) - Debt ETF)
+ 
+151533;INF209KB18T9;-;Aditya Birla Sun Life CRISIL Liquid Overnight ETF;;;1000.0000;07-Oct-2026
+ 
+Open Ended Schemes(Other Scheme - Index Funds)
+ 
+HDFC Mutual Fund
+ 
+152713;INF179KC1IM3;HDFCNIVODG;HDFC NIFTY100 Low Volatility 30 Index Fund;Direct Plan;Growth Option;9.7078;07-Oct-2026
+ 
+Open Ended Schemes(Debt Scheme - Credit Risk Fund)
+ 
+UTI Mutual Fund
+ 
+148239;INF789F1ARG8;INF789F1ARH6;UTI - Credit Risk Fund (Segregated - 06032020);;;0;07-Oct-2026
+100026;INF789F01AA1;-;UTI Credit Risk Fund;Regular Plan;Growth Option;N.A.;07-Oct-2026
+ 
+Open Ended Schemes(Debt Scheme - Corporate Bond Fund)
+ 
+Kotak Mahindra Mutual Fund
+ 
+133786;-;INF178L01BT0 ;Kotak Corporate Bond Fund;;;1202.9939;21-Oct-2016
+ 
+Open Ended Schemes(Solution Oriented Schemes ** - Retirement Fund)
+ 
+Axis Mutual Fund
+ 
+147825;INF846K01S86;-;Axis Retirement Fund - Aggressive Plan;Direct Plan;Growth Option;19.63;07-Oct-2026
+ 
+Interval Fund Schemes(Income)
+ 
+Nippon India Mutual Fund
+ 
+105689;INF204K01DN5;-;Nippon India Interval Fund-Quarterly Interval Fund Serie-II;Regular Plan;Growth Option;38.6972;07-Oct-2026
+ 
+Close Ended Schemes(Growth)
+ 
+Kotak Mahindra Mutual Fund
+ 
+134568;INF174K01P57;-;Kotak India Growth Fund - Series I;;;11.21277657;07-May-2018

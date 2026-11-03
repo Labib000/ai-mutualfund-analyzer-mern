@@ -203,13 +203,42 @@ const routes: RouteObject[] = [
                                             href: '/holdings',
                                         },
                                         {
-                                            title: 'Add fund',
+                                            title: 'Add a fund',
                                             href: '/holdings/create',
                                         },
                                     ],
                                 }),
                                 lazy: page(
                                     () => import('@/pages/holdings/create'),
+                                ),
+                            },
+                            {
+                                path: 'holdings/:holdingId',
+                                handle: handle({
+                                    breadcrumbs: [
+                                        {
+                                            title: 'Portfolio',
+                                            href: '/holdings',
+                                        },
+                                    ],
+                                }),
+                                lazy: page(
+                                    () => import('@/pages/holdings/show'),
+                                ),
+                            },
+                            {
+                                path: 'tools/sip-calculator',
+                                handle: handle({
+                                    breadcrumbs: [
+                                        {
+                                            title: 'SIP calculator',
+                                            href: '/tools/sip-calculator',
+                                        },
+                                    ],
+                                }),
+                                lazy: page(
+                                    () =>
+                                        import('@/pages/tools/sip-calculator'),
                                 ),
                             },
                             {

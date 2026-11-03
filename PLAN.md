@@ -8,6 +8,10 @@ A rebuild of Hisaab, the personal mutual fund tracker for Indian investors, on *
 >
 > **Revision 4 (2026-11-03).** Phase 1 decisions: emails go to `logs/mail.log` when SMTP isn't configured; forgot-password always gives the same answer (no account enumeration, a deliberate change from Laravel); the password-confirmation screen moves to Phase 6 with 2FA. Approved `@types/express-session` and `@types/nodemailer`.
 >
+> **Revision 6 (2026-11-03).** Phase 2c decisions: request fields keep Laravel's snake_case names (`txn_date`, `day_of_month`, …) so 422 keys and messages match, while responses are camelCase; business-rule failures throw a `ValidationError` that the error handler sends as a 422; cascading deletes (holding → SIPs and transactions, SIP → installments) are done by hand inside a Mongo transaction; `holding.version` is bumped first in every unit-checking transaction, so concurrent writes conflict and retry.
+>
+> **Revision 5 (2026-11-03).** Phase 2a decisions: the AMFI import runs without a Mongo transaction (it touches ~14k schemes and every write is idempotent, so a re-run repairs a partial one); the cron endpoint runs the job inside the request; a `jobLocks` collection stops overlapping runs; `schemes` gains `isinReinvestment`, `schemeType`, `plan` and `historySyncedAt`; new optional env `AMFI_NAV_URL`, `AMFI_TIMEOUT_SECONDS`, `MFAPI_BASE_URL`, `MFAPI_TIMEOUT_SECONDS`.
+>
 > **Revision 3 (2026-11-03).** Phase 0 runs on localhost only; the Hostinger check moves to Phase 6. Kept `vite-plus` for lint and format. Approved the Phase 0 tooling and UI packages (below).
 
 ---
@@ -108,7 +112,7 @@ Hisaab-mern/
 These are separate collections joined by `ObjectId` references. Nothing is embedded where it can grow without bound: a holding's transactions grow forever and need their own unique indexes.
 
 - **users**: `name`, `email` (unique), `passwordHash`, `emailVerifiedAt`, `createdAt`. Later: `twoFactorSecret`, `twoFactorRecoveryCodes`, `passkeys[]`.
-- **schemes**: `amfiCode` (unique), `isin`, `name` (text index for search), `amc`, `category`, `isActive`, `latestNav`, `latestNavDate`.
+- **schemes**: `amfiCode` (unique), `isinGrowth` (index), `isinReinvestment`, `name` (text index for search), `amc`, `schemeType`, `category`, `plan`, `isActive` (index), `latestNav`, `latestNavDate`, `historySyncedAt` (set once the scheme's full NAV history is stored).
 - **navHistory**: `schemeId`, `navDate`, `nav`. Unique on (`schemeId`, `navDate`). Only for schemes someone holds.
 - **holdings**: `userId`, `schemeId`. Unique on (`userId`, `schemeId`).
 - **sips**: `holdingId`, `userId`, `amountPaise`, `dayOfMonth`, `startDate`, `endDate?`, `generatedUntil?`.
@@ -117,6 +121,7 @@ These are separate collections joined by `ObjectId` references. Nothing is embed
   - Unique partial index on (`sipId`, `txnDate`) where `sipId` exists, so an installment can't be recorded twice.
 - **aiUsage**: `userId`, `feature`, `inputTokens`, `outputTokens`, `succeeded`, `cached`, `createdAt`.
 - **cache**: `key` (unique), `value`, `expiresAt` (TTL index). This replaces Laravel's cache for the value history, AI summary, fund explanations and scheme stats. Version-hash keys work the same way as now.
+- **jobLocks**: `key` (unique), `owner`, `expiresAt` (TTL index). Stops two cron calls running the same job at once (Laravel's `withoutOverlapping`).
 - **sessions**: managed by `connect-mongo`.
 - Phase 5 adds `plans`, `userPlans`, `payments`, `paymentEvents` and `webhookEvents`, mirroring PLAN.md in the Laravel app.
 
@@ -171,14 +176,18 @@ As a guard against two requests racing on the same holding, each write also incr
 - **2a. Schemes and NAVs:**
   - port `AmfiNavFileParser` and `NavImporter` (bulk upserts), `NavLookup`, and `MfApiNavProvider` with a `FakeNavProvider` for tests;
   - add a `POST /internal/jobs/nav-import` endpoint guarded by `CRON_SECRET`, plus an `npm run job:nav-import` CLI for local use.
+  - *Done (2026-11-03):* all of the above, plus the `Decimal` and date-string helpers. The import is not wrapped in a transaction (see Revision 5).
 - **2b. Calculations:** port `UnitCalculator`, `UnitLedger`, `FifoLots`, `Xirr`, `SipSchedule` and `PerformanceCalculator`, with their unit tests.
+  - *Done (2026-11-03):* in `server/src/portfolio/`, plus `Money` (in `shared`, so the client can format ₹) and bcmath-style truncating `Decimal.add/sub/mul/div`. Dates are `"YYYY-MM-DD"` strings throughout; `Performance.toJSON()` uses camelCase keys (`PerformanceJson` in `shared`).
 - **2c. Portfolio entry:**
   - scheme search, holdings, purchases, redemptions and SIPs (create, edit, stop, delete), with all the business rules;
   - an ownership middleware (`loadHolding`) that also scopes child ids to the holding;
   - SIP generation as a job and endpoint, like nav-import.
+  - *Done (2026-11-03):* API under `/api/schemes` and `/api/holdings` (actions in `server/src/portfolio/actions/`), `POST /internal/jobs/sips-generate` + `npm run job:sips-generate`, and the Portfolio, Add fund and fund pages. Fund facts (Phase 3) and AI explain (Phase 4) are not on the fund page yet.
 - **2d. Dashboard:**
   - `PortfolioPerformance` with the version-hashed value-history cache, and allocation;
   - port the dashboard UI: `PortfolioSummary`, holdings table, value chart with ranges, allocation charts.
+  - *Done (2026-11-03):* `GET /api/dashboard` (summary, weekly history, allocation, top 5 funds), the `cache` collection with `cacheGet`/`cachePut` (one `portfolio-history:<userId>` entry, replaced when the md5 of each fund's latest NAV date, transaction count, newest id and newest `updatedAt` changes), and the dashboard page. Recharts sits in its own `charts` chunk, which only the dashboard loads. The change card, insights and AI summary are left for Phases 3 and 4. **Phase 2 is complete.**
 - **Done when:** a user can add funds and SIPs, the numbers match the Laravel app for the same data, and the ported tests pass.
 
 ### Phase 3: Insights and fund facts (port of 2b-A to 2b-C)

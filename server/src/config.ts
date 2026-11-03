@@ -36,8 +36,17 @@ const envSchema = z.object({
         .trim()
         .min(32, 'SESSION_SECRET must be at least 32 characters'),
 
-    // Required from Phase 2a / 4 onwards; optional while unused.
+    /** Shared secret hPanel cron sends as X-Cron-Secret; job endpoints answer 503 without it. */
     CRON_SECRET: optionalString,
+
+    AMFI_NAV_URL: z
+        .url()
+        .default('https://www.amfiindia.com/spages/NAVAll.txt'),
+    AMFI_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(60),
+    MFAPI_BASE_URL: z.url().default('https://api.mfapi.in'),
+    MFAPI_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(15),
+
+    // Required from Phase 4 onwards; optional while unused.
     AI_PROVIDER: optionalString,
     AI_API_KEY: optionalString,
     AI_MODEL: optionalString,

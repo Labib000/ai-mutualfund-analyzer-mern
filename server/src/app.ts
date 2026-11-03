@@ -15,8 +15,15 @@ import { loadUser } from './middleware/auth.js';
 import { apiNotFound, errorHandler } from './middleware/errors.js';
 import { requireSameOrigin } from './middleware/origin.js';
 import { requestLogger } from './middleware/requestLogger.js';
+import { MfApiNavProvider } from './nav/mfApiNavProvider.js';
+import { NavLookup } from './nav/navLookup.js';
+import type { NavProvider } from './nav/navProvider.js';
 import { authRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
+import { dashboardRouter } from './routes/dashboard.js';
+import { holdingsRouter } from './routes/holdings.js';
+import { internalJobsRouter } from './routes/internalJobs.js';
+import { schemesRouter } from './routes/schemes.js';
 import { settingsRouter } from './routes/settings.js';
 
 export type AppOptions = {
@@ -28,6 +35,10 @@ export type AppOptions = {
     mailer?: Mailer;
     /** Defaults to Laravel's rules: strict (with HIBP) in production only. */
     passwordPolicy?: PasswordPolicy;
+    /** Outbound HTTP for jobs (AMFI download); tests pass a fake. */
+    fetch?: typeof fetch;
+    /** Historical NAVs; defaults to mfapi.in. Tests pass a FakeNavProvider. */
+    navProvider?: NavProvider;
 };
 
 export function createApp(options: AppOptions): Express {
@@ -44,6 +55,16 @@ export function createApp(options: AppOptions): Express {
             pwned: hibpChecker,
         },
     };
+
+    const navs = new NavLookup(
+        options.navProvider ??
+            new MfApiNavProvider({
+                baseUrl: config.MFAPI_BASE_URL,
+                timeoutSeconds: config.MFAPI_TIMEOUT_SECONDS,
+            }),
+        logger,
+    );
+    const portfolio = { navs, logger };
 
     app.disable('x-powered-by');
     app.set('trust proxy', 1); // Hostinger runs the app behind a proxy.
@@ -75,8 +96,19 @@ export function createApp(options: AppOptions): Express {
 
     api.use('/auth', authRouter(ctx));
     api.use('/settings', settingsRouter(ctx));
+    api.use('/schemes', schemesRouter());
+    api.use('/holdings', holdingsRouter(portfolio));
+    api.use('/dashboard', dashboardRouter());
     api.use(apiNotFound);
     app.use('/api', api);
+
+    const internal = express.Router();
+    internal.use(
+        '/jobs',
+        internalJobsRouter({ config, logger, fetch: options.fetch, navs }),
+    );
+    internal.use(apiNotFound);
+    app.use('/internal', internal);
 
     if (
         config.NODE_ENV === 'production' &&

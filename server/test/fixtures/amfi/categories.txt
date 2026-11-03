@@ -1,0 +1,78 @@
+# Every non-ETF category in AMFI's NAVAll.txt on 7 Oct 2026, with its expected asset class.
+Children’s Fund - Childrens' Fund|solution_oriented
+Debt Scheme - Banking and PSU Fund|debt
+Debt Scheme - Corporate Bond Fund|debt
+Debt Scheme - Credit Risk Fund|debt
+Debt Scheme - Dynamic Bond|debt
+Debt Scheme - Gilt Fund|debt
+Debt Scheme - Liquid Fund|debt
+Debt Scheme - Long Duration Fund|debt
+Debt Scheme - Low Duration Fund|debt
+Debt Scheme - Medium Duration Fund|debt
+Debt Scheme - Medium to Long Duration Fund|debt
+Debt Scheme - Money Market Fund|debt
+Debt Scheme - Overnight Fund|debt
+Debt Scheme - Short Duration Fund|debt
+Debt Scheme - Ultra Short Duration Fund|debt
+ELSS|equity
+Equity Scheme - Contra Fund|equity
+Equity Scheme - Dividend Yield Fund|equity
+Equity Scheme - ELSS|equity
+Equity Scheme - ELSS- Tax Saver Fund|equity
+Equity Scheme - Flexi Cap Fund|equity
+Equity Scheme - Focused Fund|equity
+Equity Scheme - Large & Mid Cap Fund|equity
+Equity Scheme - Large Cap Fund|equity
+Equity Scheme - Mid Cap Fund|equity
+Equity Scheme - Multi Cap Fund|equity
+Equity Scheme - Sectoral Fund|equity
+Equity Scheme - Sectoral/ Thematic|equity
+Equity Scheme - Small Cap Fund|equity
+Equity Scheme - Thematic Fund|equity
+Equity Scheme - Value Fund|equity
+Fund of Funds Scheme (Domestic) - Fund of Funds Scheme (Domestic)|other
+Gilt|debt
+Growth|equity
+Hybrid Scheme - Aggressive Hybrid Fund|hybrid
+Hybrid Scheme - Arbitrage Fund|hybrid
+Hybrid Scheme - Balanced Advantage Fund/ Dynamic Asset Allocation|hybrid
+Hybrid Scheme - Balanced Hybrid Fund|hybrid
+Hybrid Scheme - Conservative Hybrid Fund|hybrid
+Hybrid Scheme - Dynamic Asset Allocation or Balanced Advantage|hybrid
+Hybrid Scheme - Equity Savings|hybrid
+Hybrid Scheme - Equity Savings Fund|hybrid
+Hybrid Scheme - Multi Asset Allocation|hybrid
+Hybrid Scheme - Multi Asset Allocation Fund|hybrid
+Income|debt
+Income/Debt Oriented Scheme - 10-year Constant Maturity Gilt Fund|debt
+Income/Debt Oriented Scheme - Banking and PSU Debt Fund|debt
+Income/Debt Oriented Scheme - Corporate Bond Fund|debt
+Income/Debt Oriented Scheme - Credit Risk Fund|debt
+Income/Debt Oriented Scheme - Dynamic Term Fund|debt
+Income/Debt Oriented Scheme - Fixed Term Plan|debt
+Income/Debt Oriented Scheme - Floating Interest Rates Fund|debt
+Income/Debt Oriented Scheme - Gilt Fund|debt
+Income/Debt Oriented Scheme - Liquid Fund|debt
+Income/Debt Oriented Scheme - Long Term Fund|debt
+Income/Debt Oriented Scheme - Medium Term Fund|debt
+Income/Debt Oriented Scheme - Medium to Long Term Fund|debt
+Income/Debt Oriented Scheme - Money Market Fund|debt
+Income/Debt Oriented Scheme - Other Debt Scheme|debt
+Income/Debt Oriented Scheme - Overnight Fund|debt
+Income/Debt Oriented Scheme - Sectoral Fund|debt
+Income/Debt Oriented Scheme - Short Term Fund|debt
+Income/Debt Oriented Scheme - Ultra Short Term Fund|debt
+Income/Debt Oriented Scheme - Ultra Short to Short Term Fund|debt
+Index Funds - Debt Funds|debt
+Index Funds - Equity Funds|equity
+Index Funds - Hybrid Fund|hybrid
+Life Cycle Funds - Life Cycle Fund with Maturity of 10 Years|solution_oriented
+Life Cycle Funds - Life Cycle Fund with Maturity of 15 Years|solution_oriented
+Life Cycle Funds - Life Cycle Fund with Maturity of 5 Years|solution_oriented
+Money Market|debt
+Other Scheme - FoF Domestic|other
+Other Scheme - FoF Overseas|other
+Other Scheme - Index Funds|other
+Overseas Fund of Funds - Fund of Funds investing overseas|other
+Solution Oriented Scheme - Children’s Fund|solution_oriented
+Solution Oriented Scheme - Retirement Fund|solution_oriented

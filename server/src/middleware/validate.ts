@@ -49,3 +49,29 @@ export function parseOr422<S extends z.ZodType>(
 
     return result.data;
 }
+
+/**
+ * Like parseOr422, plus extra field errors computed by the caller (rules that
+ * need the server, such as "not in the future"). A field keeps the schema's
+ * error if it has one, and all errors are sent together, as Laravel does.
+ */
+export function parseWithOr422<S extends z.ZodType>(
+    schema: S,
+    data: unknown,
+    res: Response,
+    extra: Record<string, string | null | undefined>,
+): z.output<S> | undefined {
+    const result = schema.safeParse(data ?? {});
+    const errors = result.success ? {} : fieldErrors(result.error);
+
+    for (const [field, message] of Object.entries(extra)) {
+        if (message && !errors[field]) errors[field] = message;
+    }
+
+    if (!result.success || Object.keys(errors).length > 0) {
+        sendValidationErrors(res, errors);
+        return undefined;
+    }
+
+    return result.data;
+}
