@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Hisaab">
+<title>Hisaab</title>
+<defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0E9384"/><stop offset="1" stop-color="#086256"/></linearGradient></defs>
+<rect width="512" height="512" rx="116" fill="url(#hg)"/>
+<polygon points="182.00,303.79 330.00,210.21 330.00,272.21 182.00,365.79" fill="#FFC247"/>
+<rect x="104" y="184" width="84" height="208" rx="42" fill="#FFFFFF"/>
+<rect x="324" y="120" width="84" height="272" rx="42" fill="#FFFFFF"/>
+</svg>

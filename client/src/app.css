@@ -1,0 +1,182 @@
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+@import './fonts.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+    --font-sans:
+        'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --font-display:
+        'Poppins', 'Inter', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+
+    --color-brand: var(--brand);
+    --color-brand-deep: var(--brand-deep);
+    --color-amber: var(--brand-amber);
+    --color-amber-foreground: var(--brand-amber-foreground);
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+    /* Hisaab brand, from the logo: teal #0E9384 → #086256, amber #FFC247,
+       ink #0B2B27. Surfaces are neutral; teal is the one accent. --primary is
+       a step deeper than the logo teal so white button text meets 4.5:1. */
+    --brand: #0e9384;
+    --brand-deep: #086256;
+    --brand-amber: #ffc247;
+    --brand-amber-foreground: #0b2b27;
+
+    --background: #f7f8f8;
+    --foreground: #0f1a18;
+    --card: #ffffff;
+    --card-foreground: #0f1a18;
+    --popover: #ffffff;
+    --popover-foreground: #0f1a18;
+    --primary: #0b7f72;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f4f3;
+    --secondary-foreground: #0f1a18;
+    --muted: #f1f4f3;
+    --muted-foreground: #5f6b69;
+    --accent: #f1f4f3;
+    --accent-foreground: #0f1a18;
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(0.577 0.245 27.325);
+    --border: #e4e8e7;
+    --input: #e4e8e7;
+    --ring: #0b7f72;
+    /* Categorical chart slots: blue, orange, aqua, yellow, magenta. Light and
+       dark are steps of the same hues, validated for colour-blind separation. */
+    --chart-1: #2a78d6;
+    --chart-2: #eb6834;
+    --chart-3: #1baf7a;
+    --chart-4: #eda100;
+    --chart-5: #e87ba4;
+    --radius: 0.625rem;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #46524f;
+    --sidebar-primary: #0b7f72;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f1f4f3;
+    --sidebar-accent-foreground: #0f1a18;
+    --sidebar-border: #e4e8e7;
+    --sidebar-ring: #0b7f72;
+}
+
+.dark {
+    --brand: #2bc4b0;
+    --background: #0b0f0e;
+    --foreground: #e8eeec;
+    --card: #121817;
+    --card-foreground: #e8eeec;
+    --popover: #121817;
+    --popover-foreground: #e8eeec;
+    --primary: #2bb5a3;
+    --primary-foreground: #04211d;
+    --secondary: #1a2220;
+    --secondary-foreground: #e8eeec;
+    --muted: #1a2220;
+    --muted-foreground: #93a19e;
+    --accent: #1a2220;
+    --accent-foreground: #e8eeec;
+    --destructive: oklch(0.396 0.141 25.723);
+    --destructive-foreground: oklch(0.637 0.237 25.331);
+    --border: #232c2a;
+    --input: #232c2a;
+    --ring: #2bb5a3;
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --chart-3: #199e70;
+    --chart-4: #c98500;
+    --chart-5: #d55181;
+    --sidebar: #0e1312;
+    --sidebar-foreground: #b9c6c3;
+    --sidebar-primary: #2bb5a3;
+    --sidebar-primary-foreground: #04211d;
+    --sidebar-accent: #1a2220;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: #1e2725;
+    --sidebar-ring: #2bb5a3;
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    html {
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+
+    /* No grey tap flash or double-tap-zoom delay on touch screens. */
+    a,
+    button,
+    [role='button'] {
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+
+    h1,
+    h2,
+    h3,
+    [data-slot='card-title'],
+    [data-slot='dialog-title'],
+    [data-slot='sheet-title'] {
+        font-family: var(--font-display);
+    }
+}

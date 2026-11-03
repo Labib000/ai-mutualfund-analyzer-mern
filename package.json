@@ -1,0 +1,27 @@
+{
+    "name": "hisaab",
+    "private": true,
+    "workspaces": [
+        "shared",
+        "client",
+        "server"
+    ],
+    "type": "module",
+    "scripts": {
+        "dev": "npm run build -w shared && concurrently -k -n shared,server,client -c gray,cyan,magenta \"npm run dev -w shared\" \"npm run dev -w server\" \"npm run dev -w client\"",
+        "build": "npm run build -w shared && npm run build -w client && npm run build -w server",
+        "start": "node --env-file-if-exists=.env server/dist/index.js",
+        "test": "npm run build -w shared && npm run test -w server",
+        "typecheck": "npm run build -w shared && npm run typecheck --workspaces --if-present",
+        "check": "vp check",
+        "check:fix": "vp check --fix"
+    },
+    "devDependencies": {
+        "concurrently": "^10.0.3",
+        "typescript": "^5.9.3",
+        "vite-plus": "^1.4.0"
+    },
+    "engines": {
+        "node": ">=24"
+    }
+}
