@@ -9,8 +9,11 @@ import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
+import AiSummaryCard from '@/components/ai/ai-summary-card';
 import AllocationBar from '@/components/dashboard/allocation-bar';
 import CategoryList from '@/components/dashboard/category-list';
+import ChangeCard from '@/components/dashboard/change-card';
+import InsightsCard from '@/components/dashboard/insights-card';
 import PortfolioSummary from '@/components/dashboard/portfolio-summary';
 import ValueChart from '@/components/dashboard/value-chart';
 import { Head } from '@/components/head';
@@ -29,6 +32,7 @@ import { Separator } from '@/components/ui/separator';
 import { useDashboard } from '@/hooks/use-portfolio';
 import { useUser } from '@/hooks/use-user';
 import { formatDate } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
 /** Port of pages/dashboard; the insights, AI summary and change cards arrive in Phases 3 and 4. */
 export default function Dashboard() {
@@ -46,7 +50,17 @@ export default function Dashboard() {
     if (error) return <PageError error={error} retry={() => void refetch()} />;
     if (!data) return <PageLoading />;
 
-    const { fundCount, summary, history, allocation, topHoldings } = data;
+    const {
+        fundCount,
+        summary,
+        history,
+        changes,
+        insights,
+        allocation,
+        topHoldings,
+    } = data;
+    const hasChanges = Object.keys(changes).length > 0;
+    const hasInsights = insights.length > 0;
     const showChart = history.length > 1;
     const showAllocation = allocation.classes.length > 0;
 
@@ -66,6 +80,32 @@ export default function Dashboard() {
                 ) : (
                     <>
                         <PortfolioSummary summary={summary} />
+
+                        {(hasChanges || hasInsights) && (
+                            <div className="grid items-start gap-4 sm:gap-6 xl:grid-cols-5">
+                                {hasInsights && (
+                                    <InsightsCard
+                                        insights={insights}
+                                        className={
+                                            hasChanges
+                                                ? 'xl:col-span-2'
+                                                : 'xl:col-span-5'
+                                        }
+                                    />
+                                )}
+                                <ChangeCard
+                                    changes={changes}
+                                    className={cn(
+                                        'xl:row-start-1',
+                                        hasInsights
+                                            ? 'xl:col-span-3'
+                                            : 'xl:col-span-5',
+                                    )}
+                                />
+                            </div>
+                        )}
+
+                        <AiSummaryCard />
 
                         {(showChart || showAllocation) && (
                             <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 2xl:grid-cols-5">

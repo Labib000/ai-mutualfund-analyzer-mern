@@ -1,4 +1,6 @@
 /** Holdings, transactions and SIPs (port of the Portfolio controllers). */
+import type { AiContext } from '../ai/aiContext.js';
+import { explainHandler } from './ai.js';
 import {
     type HoldingCreatedResponse,
     type HoldingDetailResponse,
@@ -44,6 +46,7 @@ import {
     addRedemption,
     deleteTransaction,
 } from '../portfolio/actions/transactions.js';
+import { schemeStats } from '../nav/schemeStats.js';
 import {
     performanceForHolding,
     performanceForUser,
@@ -63,7 +66,7 @@ const futureDateError = (value: unknown) =>
 const isDuplicateKey = (error: unknown) =>
     (error as { code?: number })?.code === 11000;
 
-export function holdingsRouter(ctx: PortfolioContext): Router {
+export function holdingsRouter(ctx: PortfolioContext, ai: AiContext): Router {
     const router = Router();
 
     router.use(requireAuth, requireVerified);
@@ -129,6 +132,9 @@ export function holdingsRouter(ctx: PortfolioContext): Router {
     const holding = Router({ mergeParams: true });
     router.use('/:holdingId', loadHolding, holding);
 
+    /** A beginner's explanation of the fund's scheme (AI, cached per scheme). */
+    holding.post('/explain', ...explainHandler(ai));
+
     const schemeOf = async (schemeId: unknown): Promise<SchemeDoc> => {
         const scheme = await Scheme.findById(schemeId);
         if (!scheme) throw new Error(`Scheme ${String(schemeId)} is missing`);
@@ -161,6 +167,7 @@ export function holdingsRouter(ctx: PortfolioContext): Router {
             transactions: transactions.map(transactionJson),
             sips: sips.map((sip) => sipJson(sip, now)),
             today: now,
+            fundStats: await schemeStats(scheme),
         } satisfies HoldingDetailResponse);
     });
 

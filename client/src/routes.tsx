@@ -242,6 +242,20 @@ const routes: RouteObject[] = [
                                 ),
                             },
                             {
+                                path: 'tools/compare',
+                                handle: handle({
+                                    breadcrumbs: [
+                                        {
+                                            title: 'Compare funds',
+                                            href: '/tools/compare',
+                                        },
+                                    ],
+                                }),
+                                lazy: page(
+                                    () => import('@/pages/tools/compare'),
+                                ),
+                            },
+                            {
                                 path: 'ask',
                                 handle: handle({
                                     breadcrumbs: [

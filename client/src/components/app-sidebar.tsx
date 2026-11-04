@@ -3,6 +3,7 @@ import {
     faChartPie,
     faComments,
     faPlus,
+    faScaleBalanced,
     faWallet,
     faXmark,
 } from '@fortawesome/free-solid-svg-icons';
@@ -51,6 +52,11 @@ const toolItems: NavItem[] = [
         title: 'SIP calculator',
         href: '/tools/sip-calculator',
         icon: faCalculator,
+    },
+    {
+        title: 'Compare funds',
+        href: '/tools/compare',
+        icon: faScaleBalanced,
     },
 ];
 

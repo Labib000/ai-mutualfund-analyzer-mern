@@ -1,8 +1,13 @@
-import { faPen, faRepeat, faTrashCan } from '@fortawesome/free-solid-svg-icons';
+import {
+    faPen,
+    faRepeat,
+    faScaleBalanced,
+    faTrashCan,
+} from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { SipJson, TransactionJson, TransactionType } from '@hisaab/shared';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
 import AlertError from '@/components/alert-error';
 import { Head } from '@/components/head';
@@ -11,6 +16,8 @@ import { PageError, PageLoading } from '@/components/page-state';
 import Pagination from '@/components/pagination';
 import AmcAvatar from '@/components/portfolio/amc-avatar';
 import ConfirmDialog from '@/components/portfolio/confirm-dialog';
+import ExplainFundDialog from '@/components/ai/explain-fund-dialog';
+import FundFactsCard from '@/components/portfolio/fund-facts-card';
 import PurchaseDialog from '@/components/portfolio/purchase-dialog';
 import RedemptionDialog from '@/components/portfolio/redemption-dialog';
 import SipDialog from '@/components/portfolio/sip-dialog';
@@ -124,7 +131,7 @@ export default function HoldingShow() {
     }
     if (!data) return <PageLoading />;
 
-    const { holding, transactions, sips, today } = data;
+    const { holding, transactions, sips, today, fundStats } = data;
     const { performance } = holding;
     const unitsHeld = performance.unitsHeld ?? '0';
     const hasUnits = Number(unitsHeld) > 0;
@@ -149,7 +156,7 @@ export default function HoldingShow() {
             <Head title={holding.scheme.name} />
 
             <div className="flex flex-1 flex-col gap-4 p-4 sm:gap-6 md:p-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                     <div className="flex min-w-0 items-start gap-3 sm:gap-4">
                         <AmcAvatar
                             amc={holding.scheme.amc}
@@ -198,6 +205,23 @@ export default function HoldingShow() {
                                 </Button>
                             }
                         />
+                        <ExplainFundDialog
+                            holdingId={holding.id}
+                            schemeName={holding.scheme.name}
+                            className="col-span-2 sm:col-auto"
+                        />
+                        <Button
+                            variant="outline"
+                            asChild
+                            className="w-full sm:w-auto"
+                        >
+                            <Link
+                                to={`/tools/compare?funds=${holding.scheme.id}&period=3y`}
+                            >
+                                <FontAwesomeIcon icon={faScaleBalanced} />
+                                Compare
+                            </Link>
+                        </Button>
                     </div>
                 </div>
 
@@ -218,6 +242,8 @@ export default function HoldingShow() {
                             ` on ${formatDate(holding.scheme.latestNavDate)}`}
                     </p>
                 </div>
+
+                {fundStats && <FundFactsCard stats={fundStats} />}
 
                 {sips.length > 0 && (
                     <Card>

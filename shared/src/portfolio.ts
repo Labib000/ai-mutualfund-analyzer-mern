@@ -412,12 +412,36 @@ export type SipJson = {
     earliestEndDate: string;
 };
 
+/**
+ * A scheme's own past returns and risk from its NAV history (port of
+ * FundStatsResult::toArray). Percentages are rounded to 2 dp.
+ */
+export type FundStatsJson = {
+    /** Latest NAV date, "YYYY-MM-DD". */
+    asOf: string;
+    /** First NAV date. */
+    since: string;
+    return1yPct: number | null;
+    cagr3yPct: number | null;
+    cagr5yPct: number | null;
+    sinceStartPct: number;
+    /** True when the history covers a year or more, so sinceStartPct is a yearly rate. */
+    sinceStartAnnualised: boolean;
+    volatilityPct: number | null;
+    /** The largest fall from a peak, as a positive percentage (0 when it never fell). */
+    maxDrawdownPct: number;
+    drawdownPeak: string | null;
+    drawdownTrough: string | null;
+};
+
 export type HoldingDetailResponse = {
     holding: HoldingSummary;
     transactions: TransactionJson[];
     sips: SipJson[];
     /** Today in IST, "YYYY-MM-DD". */
     today: string;
+    /** Null until the scheme has at least two NAVs stored. */
+    fundStats: FundStatsJson | null;
 };
 
 /** Every write answers with the toast text. */
@@ -461,10 +485,59 @@ export type Allocation = {
     }[];
 };
 
+export const CHANGE_PERIODS = ['7d', '30d', 'month'] as const;
+/** 7 and 30 days back from the newest NAV, or since the previous month's close. */
+export type ChangePeriod = (typeof CHANGE_PERIODS)[number];
+
+/** One fund's part in a portfolio change. Money is in paise. */
+export type ChangeFundJson = {
+    name: string;
+    startPaise: number;
+    endPaise: number;
+    /** Purchases and SIP installments minus redemption proceeds. */
+    netFlowPaise: number;
+    /** The part of the change not explained by money added or taken out. */
+    marketPaise: number;
+    /** Against the starting value; null for a fund bought during the period. */
+    marketPct: number | null;
+};
+
+/** How the portfolio's value moved over a period, split into new money and market movement. */
+export type PortfolioChangeJson = {
+    period: ChangePeriod;
+    label: string;
+    /** The valuation date the period starts from (its movements belong to the start value). */
+    from: string;
+    to: string;
+    startPaise: number;
+    endPaise: number;
+    netFlowPaise: number;
+    marketPaise: number;
+    marketPct: number | null;
+    sipInstallments: number;
+    /** Highest market movement among funds held at the start. */
+    best: ChangeFundJson | null;
+    /** Lowest, when at least two funds were held at the start. */
+    worst: ChangeFundJson | null;
+    /** Largest end value first. */
+    funds: ChangeFundJson[];
+};
+
+/** A factual observation; "attention" marks something worth a look, never advice. */
+export type InsightJson = {
+    code: string;
+    tone: 'attention' | 'info';
+    title: string;
+    detail: string;
+};
+
 export type DashboardResponse = {
     fundCount: number;
     summary: PerformanceJson;
     history: HistoryPoint[];
+    /** Empty until something is valued. */
+    changes: Partial<Record<ChangePeriod, PortfolioChangeJson>>;
+    insights: InsightJson[];
     allocation: Allocation;
     /** The biggest funds by current value, at most 5. */
     topHoldings: HoldingSummary[];

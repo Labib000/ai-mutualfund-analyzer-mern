@@ -22,6 +22,7 @@ import {
     makeTestApp,
     testConfig,
 } from './app.js';
+import { FakeAiProvider } from './fakeAiProvider.js';
 import { FakeNavProvider } from './fakeNavProvider.js';
 import { createScheme } from './schemes.js';
 
@@ -54,6 +55,8 @@ export type Portfolio = {
     scheme: SchemeDoc;
     holding: HoldingDoc;
     navProvider: FakeNavProvider;
+    /** The app's AI model; answers with canned text. */
+    ai: FakeAiProvider;
     /** "/api/holdings/<id>" for the fixture holding (or another). */
     url: (path?: string, holding?: { id: string }) => string;
     navOn: (date: string) => string;
@@ -89,7 +92,11 @@ export async function buildPortfolio(): Promise<Portfolio> {
     navs['2026-10-05'] = '29.1100';
 
     const navProvider = new FakeNavProvider({ [AMFI_CODE]: navs });
-    const { app, agent: newAgent } = makeTestApp({ navProvider });
+    const ai = new FakeAiProvider();
+    const { app, agent: newAgent } = makeTestApp({
+        navProvider,
+        aiProvider: ai,
+    });
 
     const user = await createUser();
     const scheme = await createScheme({
@@ -117,6 +124,7 @@ export async function buildPortfolio(): Promise<Portfolio> {
         scheme,
         holding,
         navProvider,
+        ai,
         url: (path = '', h = holding) => `/api/holdings/${h.id}${path}`,
         navOn: (date) => {
             const nav = navProvider.navs[AMFI_CODE]![date];

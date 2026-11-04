@@ -64,6 +64,20 @@ export function perUserLimiter(name: string, limit: number): RequestHandler {
     });
 }
 
+/** AI requests: 5 a minute per user (Laravel's "ai" limiter). */
+export function aiLimiter(): RequestHandler {
+    return rateLimit({
+        ...common,
+        limit: 5,
+        store: new MongoRateLimitStore('ai'),
+        keyGenerator: (req) =>
+            req.user ? `user:${req.user.id}` : `ip:${ip(req)}`,
+        handler: tooMany(
+            (s) => `Too many AI requests. Please try again in ${s} seconds.`,
+        ),
+    });
+}
+
 /** Per-IP limiter for guest endpoints (forgot / reset password). */
 export function perIpLimiter(name: string, limit: number): RequestHandler {
     return rateLimit({

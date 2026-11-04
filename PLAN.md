@@ -8,6 +8,12 @@ A rebuild of Hisaab, the personal mutual fund tracker for Indian investors, on *
 >
 > **Revision 4 (2026-11-03).** Phase 1 decisions: emails go to `logs/mail.log` when SMTP isn't configured; forgot-password always gives the same answer (no account enumeration, a deliberate change from Laravel); the password-confirmation screen moves to Phase 6 with 2FA. Approved `@types/express-session` and `@types/nodemailer`.
 >
+> **Revision 9 (2026-11-03).** New tool, not in Laravel: **fund compare** (`/tools/compare`, `GET /api/compare?ids=a,b,c`), up to three funds side by side. Decisions: any active scheme can be compared (its mfapi history is fetched on first use, as when adding a fund); no ratings or "best fund" labels, only the best figure in each row set in bold; metrics are trailing returns (1M to 10Y, since launch), the last five calendar years and this year so far, 1Y and 3Y rolling returns (weekly windows over 5 and 10 years), volatility, Sharpe and Sortino over the last 3 years against `COMPARE_RISK_FREE_RATE` (default 6.5%), the largest fall over the whole history with its recovery date, and a ₹10,000 monthly SIP check over 1, 3 and 5 years; 1Y/3Y/5Y and volatility reuse `fundStats()` so the fund page and compare agree; results cache per scheme (`scheme-compare:<id>`) until a newer NAV. Expense ratio, AUM, exit load, holdings and benchmark data aren't available, so they aren't shown. Known limit: on the free Atlas tier the first compare of a fund nobody has used yet takes 5–20 s, mostly storing its NAV history; the page says so while it loads.
+
+> **Revision 8 (2026-11-03).** Phase 4 decisions: Groq is called with Node's built-in `fetch` (no SDK, no new packages); the prompts are copied byte for byte from Laravel and pinned by tests; AI errors use the app's `{ message }` body (plus `remaining`) instead of Laravel's `{ error }`, so the client's `ApiError` shows them as they are; the explain endpoint is `POST /api/holdings/:id/explain`; `aiUsage` stores `provider` and `model` and no `cached` flag (cached answers aren't logged, as in Laravel). One deliberate change from Laravel: `fundStats()` now scales NAVs from before a **face-value change** (a one-step jump of 8× or more, e.g. HDFC Liquid Fund's ×100 on 30 Aug 2015) onto today's basis. Without it, mfapi.in's raw NAVs gave that fund "+48.9% a year since 2012", on the fund facts card and in the AI's explanation; the stats cache version gained a `v2|` prefix so old figures are recomputed.
+>
+> **Revision 7 (2026-11-03).** Phase 3 decisions: `FinancialYears` is ported with tests but no UI, as in Laravel (only the Phase 4 AI context uses it); the change card's "Explain this" button and the insights' suggested AI questions wait for Phase 4 (the questions are kept server-side and not sent, as in Laravel); fund names in sentences use the shared `shortSchemeName()`, which drops only plan and option parts, a deliberate change from Laravel's `shortName()`, which cut "UTI - Nifty Next 50 Index Fund" down to "UTI"; the dashboard's change periods are `{}` (not `[]`) when nothing is valued yet.
+>
 > **Revision 6 (2026-11-03).** Phase 2c decisions: request fields keep Laravel's snake_case names (`txn_date`, `day_of_month`, …) so 422 keys and messages match, while responses are camelCase; business-rule failures throw a `ValidationError` that the error handler sends as a 422; cascading deletes (holding → SIPs and transactions, SIP → installments) are done by hand inside a Mongo transaction; `holding.version` is bumped first in every unit-checking transaction, so concurrent writes conflict and retry.
 >
 > **Revision 5 (2026-11-03).** Phase 2a decisions: the AMFI import runs without a Mongo transaction (it touches ~14k schemes and every write is idempotent, so a re-run repairs a partial one); the cron endpoint runs the job inside the request; a `jobLocks` collection stops overlapping runs; `schemes` gains `isinReinvestment`, `schemeType`, `plan` and `historySyncedAt`; new optional env `AMFI_NAV_URL`, `AMFI_TIMEOUT_SECONDS`, `MFAPI_BASE_URL`, `MFAPI_TIMEOUT_SECONDS`.
@@ -119,7 +125,7 @@ These are separate collections joined by `ObjectId` references. Nothing is embed
 - **transactions**: `holdingId`, `userId`, `sipId?`, `type` (`purchase` | `sip_installment` | `redemption`), `txnDate`, `navDate`, `amountPaise`, `stampDutyPaise`, `nav`, `units`, `unitsOverridden`, `createdAt`.
   - Index on (`holdingId`, `txnDate`).
   - Unique partial index on (`sipId`, `txnDate`) where `sipId` exists, so an installment can't be recorded twice.
-- **aiUsage**: `userId`, `feature`, `inputTokens`, `outputTokens`, `succeeded`, `cached`, `createdAt`.
+- **aiUsage**: `userId`, `feature`, `provider`, `model`, `inputTokens`, `outputTokens`, `succeeded`, `createdAt`. One row per call to the provider; cached answers aren't logged.
 - **cache**: `key` (unique), `value`, `expiresAt` (TTL index). This replaces Laravel's cache for the value history, AI summary, fund explanations and scheme stats. Version-hash keys work the same way as now.
 - **jobLocks**: `key` (unique), `owner`, `expiresAt` (TTL index). Stops two cron calls running the same job at once (Laravel's `withoutOverlapping`).
 - **sessions**: managed by `connect-mongo`.
@@ -183,19 +189,36 @@ As a guard against two requests racing on the same holding, each write also incr
   - scheme search, holdings, purchases, redemptions and SIPs (create, edit, stop, delete), with all the business rules;
   - an ownership middleware (`loadHolding`) that also scopes child ids to the holding;
   - SIP generation as a job and endpoint, like nav-import.
-  - *Done (2026-11-03):* API under `/api/schemes` and `/api/holdings` (actions in `server/src/portfolio/actions/`), `POST /internal/jobs/sips-generate` + `npm run job:sips-generate`, and the Portfolio, Add fund and fund pages. Fund facts (Phase 3) and AI explain (Phase 4) are not on the fund page yet.
+  - *Done (2026-11-03):* API under `/api/schemes` and `/api/holdings` (actions in `server/src/portfolio/actions/`), `POST /internal/jobs/sips-generate` + `npm run job:sips-generate`, and the Portfolio, Add fund and fund pages. AI explain came in Phase 4.
 - **2d. Dashboard:**
   - `PortfolioPerformance` with the version-hashed value-history cache, and allocation;
   - port the dashboard UI: `PortfolioSummary`, holdings table, value chart with ranges, allocation charts.
-  - *Done (2026-11-03):* `GET /api/dashboard` (summary, weekly history, allocation, top 5 funds), the `cache` collection with `cacheGet`/`cachePut` (one `portfolio-history:<userId>` entry, replaced when the md5 of each fund's latest NAV date, transaction count, newest id and newest `updatedAt` changes), and the dashboard page. Recharts sits in its own `charts` chunk, which only the dashboard loads. The change card, insights and AI summary are left for Phases 3 and 4. **Phase 2 is complete.**
+  - *Done (2026-11-03):* `GET /api/dashboard` (summary, weekly history, allocation, top 5 funds), the `cache` collection with `cacheGet`/`cachePut` (one `portfolio-history:<userId>` entry, replaced when the md5 of each fund's latest NAV date, transaction count, newest id and newest `updatedAt` changes), and the dashboard page. Recharts sits in its own `charts` chunk, which only the dashboard loads. The change card and insights came in Phase 3; the AI summary came in Phase 4. **Phase 2 is complete.**
 - **Done when:** a user can add funds and SIPs, the numbers match the Laravel app for the same data, and the ported tests pass.
 
 ### Phase 3: Insights and fund facts (port of 2b-A to 2b-C)
 - `FundStats`/`SchemeStats`, `Insights`, `PortfolioChange`, and `FinancialYears`, with tests and the dashboard cards.
+- *Done (2026-11-03):*
+  - **3a. Fund facts:** `fundStats()` (1Y, 3Y and 5Y CAGR, since start, weekly volatility, max drawdown) and `schemeStats()`, cached per scheme as `scheme-stats:<schemeId>` and versioned by `latestNavDate|historySyncedAt`. `GET /api/holdings/:id` returns `fundStats`, and the Fund facts card is on the fund page.
+  - **3b. What changed:** `changeOver()` and `portfolioChanges()` for 7D / 30D / this month (new money vs market movement, best and worst fund, SIP installments). Shown on the dashboard.
+  - **3c. Insights:** `insightsOf()` and `portfolioInsights()`, with the same rules, thresholds and wording as Laravel. The Insights card sits beside the change card on the dashboard.
+  - **3d. Financial years:** `financialYears()`, server only.
+  - Laravel's unit tests for all four are ported with the same fixtures and expected figures. **Phase 3 is complete.**
 
 ### Phase 4: AI (port of Phase 2)
 - `AiProvider`, `GroqProvider`, `FakeAiProvider`, `RunAiFeature`, `AiQuota` (20 a month on the IST calendar month, 5 a minute; failed and cached calls don't count), and `PortfolioContext`, including the test that keeps a 20-fund context under 13K characters.
 - Summary, ask, digest and explain endpoints with caching; the Ask page; disclaimers everywhere.
+- *Done (2026-11-03):*
+  - **4a. Foundation:** typed `AI_*` settings with Laravel's defaults, `GroqProvider` (OpenAI-style chat completions, `reasoning_effort: low` without reasoning text, no retries), `AiQuota`, `RunAiFeature` (logs every call, failed ones too), the prompts, and the `aiUsage` collection. `createApp` takes an `aiProvider`; tests use `FakeAiProvider`.
+  - **4b. What the AI sees:** `renderContext()`/`contextFor()` (totals, allocation, each fund with its fund facts line and running SIPs, cash flow by financial year, the last 30 days' change, and the insights as observations), `changeText()`, `fundFactsFull()`/`fundFactsShort()` and `suggestedQuestions()`.
+  - **4c. Endpoints:** `GET /api/ai/ask`, `POST /api/ai/summary` (cached a day, versioned by the history version, the SIPs and the model; `fresh` regenerates), `POST /api/ai/ask` (last 6 turns from the browser), `POST /api/ai/digest` (cached per period) and `POST /api/holdings/:id/explain` (cached 30 days per scheme, shared by every user). 5 a minute per user; 429 when the month is used up, 503 when the AI is busy, 422 with nothing to explain.
+  - **4d. UI:** the AI summary card on the dashboard, "Explain this" on the What changed card, "Explain this fund" on the fund page, and the Ask page, laid out like a chat assistant (the input starts mid-screen with suggestions and moves to the bottom once a chat starts; a round send button; answers revealed word by word, off under reduced motion; copy and retry on answers; New chat; components in `client/src/components/ai/chat/`). Answers render as plain paragraphs and lists (markdown markers the model adds anyway are dropped), each with the not-advice disclaimer and the requests left.
+  - Laravel's `GroqProviderTest`, `AiPromptsTest`, `PortfolioContextTest`, `SuggestedQuestionsTest` and `AiFeaturesTest` are ported. **Phase 4 is complete.**
+
+### Tools (outside the phases)
+
+- SIP calculator (Phase 2).
+- Fund compare (Revision 9): the maths in `server/src/portfolio/fundCompare.ts`, the endpoint in `server/src/routes/compare.ts`, the page in `client/src/pages/tools/compare.tsx`; also linked from each fund page.
 
 ### Phase 5: Razorpay Pro plan
 - As in Phase 3 of the Laravel plan: orders, a signature-verified callback, an idempotent webhook as the source of truth (activation inside a Mongo transaction), plan expiry and limits.

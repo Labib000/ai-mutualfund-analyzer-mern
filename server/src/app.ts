@@ -17,11 +17,15 @@ import { requireSameOrigin } from './middleware/origin.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { MfApiNavProvider } from './nav/mfApiNavProvider.js';
 import { NavLookup } from './nav/navLookup.js';
+import { createAiContext } from './ai/aiContext.js';
+import type { AiProvider } from './ai/provider.js';
 import type { NavProvider } from './nav/navProvider.js';
 import { authRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { holdingsRouter } from './routes/holdings.js';
+import { aiRouter } from './routes/ai.js';
+import { compareRouter } from './routes/compare.js';
 import { internalJobsRouter } from './routes/internalJobs.js';
 import { schemesRouter } from './routes/schemes.js';
 import { settingsRouter } from './routes/settings.js';
@@ -39,6 +43,8 @@ export type AppOptions = {
     fetch?: typeof fetch;
     /** Historical NAVs; defaults to mfapi.in. Tests pass a FakeNavProvider. */
     navProvider?: NavProvider;
+    /** The AI model; defaults to Groq. Tests pass a FakeAiProvider. */
+    aiProvider?: AiProvider;
 };
 
 export function createApp(options: AppOptions): Express {
@@ -65,6 +71,7 @@ export function createApp(options: AppOptions): Express {
         logger,
     );
     const portfolio = { navs, logger };
+    const ai = createAiContext(options);
 
     app.disable('x-powered-by');
     app.set('trust proxy', 1); // Hostinger runs the app behind a proxy.
@@ -97,8 +104,10 @@ export function createApp(options: AppOptions): Express {
     api.use('/auth', authRouter(ctx));
     api.use('/settings', settingsRouter(ctx));
     api.use('/schemes', schemesRouter());
-    api.use('/holdings', holdingsRouter(portfolio));
+    api.use('/holdings', holdingsRouter(portfolio, ai));
+    api.use('/ai', aiRouter(ai));
     api.use('/dashboard', dashboardRouter());
+    api.use('/compare', compareRouter(portfolio, config));
     api.use(apiNotFound);
     app.use('/api', api);
 

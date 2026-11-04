@@ -10,8 +10,7 @@ import { useTestDb } from '../../support/db.js';
 import { businessDayNavs, usePortfolio } from '../../support/portfolio.js';
 import { createScheme } from '../../support/schemes.js';
 
-// Port of tests/Feature/DashboardTest.php. The `changes` and `insights`
-// assertions arrive with PortfolioChange and Insights in Phase 3.
+// Port of tests/Feature/DashboardTest.php.
 describe('dashboard', () => {
     useTestDb();
     const p = usePortfolio();
@@ -51,6 +50,8 @@ describe('dashboard', () => {
         expect(body.history).toEqual([]);
         expect(body.allocation).toEqual({ classes: [], categories: [] });
         expect(body.topHoldings).toEqual([]);
+        expect(body.insights).toEqual([]);
+        expect(body.changes).toEqual({});
         expect(body.summary.investedPaise).toBe(0);
     });
 
@@ -76,6 +77,25 @@ describe('dashboard', () => {
         expect(body.allocation.categories[0]!.label).toBe('Flexi Cap Fund');
         expect(body.topHoldings).toHaveLength(1);
         expect(body.topHoldings[0]!.id).toBe(p().holding.id);
+        expect(body.changes['7d']).toMatchObject({
+            to: '2026-10-07',
+            from: '2026-09-30',
+            endPaise: 9108390,
+        });
+        expect(body.changes.month!.from).toBe('2026-09-30');
+        expect(body.changes['30d']!.from).toBe('2026-09-07');
+        expect(body.insights).toContainEqual({
+            code: 'single_asset_class',
+            tone: 'info',
+            title: 'All your money is in Equity funds',
+            detail: 'Equity funds follow the stock market, so their value can rise and fall sharply over short periods.',
+        });
+        expect(body.insights.every((i) => !('question' in i))).toBe(true);
+        for (const change of Object.values(body.changes)) {
+            expect(change.marketPaise).toBe(
+                change.endPaise - change.startPaise - change.netFlowPaise,
+            );
+        }
     });
 
     it('spans asset classes in allocation and top holdings', async () => {

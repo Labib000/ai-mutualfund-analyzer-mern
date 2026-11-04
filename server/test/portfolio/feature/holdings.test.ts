@@ -217,6 +217,27 @@ describe('holdings', () => {
         });
     });
 
+    it("includes the fund's own stats once its NAV history is stored", async () => {
+        // The purchase above fetched the history; here nothing has yet.
+        const before = await p().agent.get(p().url()).expect(200);
+        expect(before.body.fundStats).toBeNull();
+
+        await p()
+            .agent.post(p().url('/purchases'))
+            .send({ txn_date: '2026-10-04', amount: '10000' })
+            .expect(201);
+        const res = await p().agent.get(p().url()).expect(200);
+
+        expect(res.body.fundStats).toMatchObject({
+            asOf: '2026-10-07',
+            since: '2025-01-01',
+            sinceStartAnnualised: true,
+            cagr3yPct: null,
+        });
+        expect(res.body.fundStats.return1yPct).toBeGreaterThan(0);
+        expect(res.body.fundStats.maxDrawdownPct).toBeGreaterThan(0);
+    });
+
     it("answers 404 for another user's holding", async () => {
         const other = await createForeignHolding();
 

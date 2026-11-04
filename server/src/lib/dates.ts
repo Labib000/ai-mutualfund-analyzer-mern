@@ -63,6 +63,23 @@ export function addDays(date: string, days: number): string {
 }
 
 /** Monday to Friday. */
+/**
+ * Add (or subtract) whole years, overflowing like Carbon's addYears():
+ * 29 Feb 2024 − 1 year = 1 Mar 2023.
+ */
+export function addYearsOverflow(date: string, years: number): string {
+    const utc = toUtc(date);
+    return new Date(
+        Date.UTC(
+            utc.getUTCFullYear() + years,
+            utc.getUTCMonth(),
+            utc.getUTCDate(),
+        ),
+    )
+        .toISOString()
+        .slice(0, 10);
+}
+
 export function isWeekday(date: string): boolean {
     const day = toUtc(date).getUTCDay();
     return day !== 0 && day !== 6;

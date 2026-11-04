@@ -1,11 +1,14 @@
-/** Portfolio overview (port of DashboardController; changes and insights come in Phase 3). */
+/** Portfolio overview (port of DashboardController). */
 import type { DashboardResponse } from '@hisaab/shared';
 import { Router } from 'express';
 
 import { requireAuth, requireVerified } from '../middleware/auth.js';
+import { today } from '../lib/today.js';
 import { allocationOf } from '../portfolio/allocation.js';
+import { insightJson, portfolioInsights } from '../portfolio/insights.js';
 import {
     performanceForUser,
+    portfolioChanges,
     portfolioHistory,
 } from '../portfolio/portfolioPerformance.js';
 import { schemeSummary } from '../portfolio/presenters.js';
@@ -28,6 +31,10 @@ export function dashboardRouter(): Router {
             fundCount: holdings.length,
             summary: total.toJSON(),
             history: await portfolioHistory(userId, holdings),
+            changes: await portfolioChanges(holdings),
+            insights: (
+                await portfolioInsights(holdings, total.xirrStatus, today())
+            ).map(insightJson),
             allocation: allocationOf(
                 holdings.map((h) => ({
                     category: h.scheme.category,

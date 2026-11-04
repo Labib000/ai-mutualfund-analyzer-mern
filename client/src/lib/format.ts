@@ -108,6 +108,21 @@ export function formatDate(date: string): string {
     return dateFormat.format(new Date(`${date}T00:00:00Z`));
 }
 
+const dateTimeFormat = new Intl.DateTimeFormat('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'Asia/Kolkata',
+});
+
+/**
+ * Format an ISO timestamp in IST, e.g. "3 Nov, 5:11 pm".
+ */
+export function formatDateTime(iso: string): string {
+    return dateTimeFormat.format(new Date(iso));
+}
+
 /**
  * Format a NAV string with Indian digit grouping, keeping all 4 decimals.
  */

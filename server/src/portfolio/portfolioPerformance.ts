@@ -4,7 +4,13 @@
  */
 import { createHash } from 'node:crypto';
 
-import { type HistoryPoint, addsUnits } from '@hisaab/shared';
+import {
+    CHANGE_PERIODS,
+    type ChangePeriod,
+    type HistoryPoint,
+    type PortfolioChangeJson,
+    addsUnits,
+} from '@hisaab/shared';
 import type { Types } from 'mongoose';
 
 import { cacheGet, cachePut } from '../lib/cache.js';
@@ -19,6 +25,7 @@ import {
     holdingPerformance,
     portfolioPerformance,
 } from './performanceCalculator.js';
+import { changeOver, periodStart } from './portfolioChange.js';
 import { type HistoryInput, valueHistory } from './valueHistory.js';
 
 type LeanScheme = SchemeFields & { _id: Types.ObjectId };
@@ -191,6 +198,53 @@ export async function portfolioHistory(
     const series = await computeHistory(holdings);
     await cachePut(key, { version, series }, HISTORY_TTL_SECONDS);
     return series;
+}
+
+/**
+ * Value change over each period up to the newest NAV, split into new money and
+ * market movement. Empty when nothing is valued yet.
+ */
+export async function portfolioChanges(
+    holdings: readonly HoldingWithPerformance[],
+): Promise<Partial<Record<ChangePeriod, PortfolioChangeJson>>> {
+    let end: string | null = null;
+    for (const h of holdings) {
+        const date = h.scheme.latestNavDate;
+        if (date && (end === null || date > end)) end = date;
+    }
+    if (end === null || holdings.every((h) => h.input.movements.length === 0)) {
+        return {};
+    }
+
+    const starts = CHANGE_PERIODS.map((period) => periodStart(period, end));
+    const earliest = starts.reduce((a, b) => (a < b ? a : b));
+    const navs = await navsFrom(holdings, earliest);
+
+    // SIP installment dates in the longest period, counted per period below.
+    const installments = await Transaction.find(
+        {
+            holdingId: { $in: holdings.map((h) => h.holdingId) },
+            type: 'sip_installment',
+            txnDate: { $gt: earliest, $lte: end },
+        },
+        { _id: 0, txnDate: 1 },
+    ).lean();
+
+    const funds = holdings.map((h) => ({
+        name: h.scheme.name,
+        input: h.input,
+        navs: navs.get(String(h.holdingId))!,
+    }));
+
+    const changes: Partial<Record<ChangePeriod, PortfolioChangeJson>> = {};
+    CHANGE_PERIODS.forEach((period, i) => {
+        const from = starts[i]!;
+        const count = installments.filter(
+            (t) => t.txnDate > from && t.txnDate <= end,
+        ).length;
+        changes[period] = changeOver(period, end, funds, count);
+    });
+    return changes;
 }
 
 async function computeHistory(
