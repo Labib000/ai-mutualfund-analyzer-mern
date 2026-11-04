@@ -17,7 +17,9 @@
         "check:fix": "vp check --fix",
         "db:seed": "npm run build -w shared && npm run db:seed -w server",
         "job:nav-import": "npm run build -w shared && npm run job:nav-import -w server --",
-        "job:sips-generate": "npm run build -w shared && npm run job:sips-generate -w server --"
+        "job:sips-generate": "npm run build -w shared && npm run job:sips-generate -w server --",
+        "rag:check": "npm run rag:check -w server",
+        "rag:extract": "npm run rag:extract -w server"
     },
     "devDependencies": {
         "concurrently": "^10.0.3",

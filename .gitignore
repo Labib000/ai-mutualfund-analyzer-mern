@@ -8,3 +8,6 @@ coverage/
 .DS_Store
 *.log
 logs/
+RAG_STUDY_GUIDE.md
+RAG_PENDING.md
+server/rag/docs/

@@ -1,0 +1,456 @@
+{
+    "version": 1,
+    "documents": [
+        {
+            "id": "ppfas-kim-flexi-cap",
+            "title": "KIM: Parag Parikh Flexi Cap Fund",
+            "amc": "PPFAS Mutual Fund",
+            "docType": "kim",
+            "asOfDate": "2025-11-27",
+            "sourceUrl": "https://amc.ppfas.com/downloads/parag-parikh-flexi-cap-fund/KIM_PPFCF.pdf",
+            "file": "ppfas-kim-flexi-cap.pdf",
+            "amfiCodes": [122639, 122640, 153964, 153965]
+        },
+        {
+            "id": "ppfas-kim-large-cap",
+            "title": "KIM: Parag Parikh Large Cap Fund",
+            "amc": "PPFAS Mutual Fund",
+            "docType": "kim",
+            "asOfDate": "2026-09-30",
+            "sourceUrl": "https://amc.ppfas.com/downloads/parag-parikh-large-cap-fund/kim-parag-parikh-large-cap-fund.pdf",
+            "file": "ppfas-kim-large-cap.pdf",
+            "amfiCodes": [154153, 154154, 154155, 154156]
+        },
+        {
+            "id": "ppfas-kim-tax-saver",
+            "title": "KIM: Parag Parikh ELSS Tax Saver Fund",
+            "amc": "PPFAS Mutual Fund",
+            "docType": "kim",
+            "asOfDate": "2025-11-27",
+            "sourceUrl": "https://amc.ppfas.com/downloads/parag-parikh-tax-saver-fund/kim-parag-parikh-tax-saver-fund.pdf",
+            "file": "ppfas-kim-tax-saver.pdf",
+            "amfiCodes": [147481, 147482]
+        },
+        {
+            "id": "ppfas-kim-liquid",
+            "title": "KIM: Parag Parikh Liquid Fund",
+            "amc": "PPFAS Mutual Fund",
+            "docType": "kim",
+            "asOfDate": "2025-11-27",
+            "sourceUrl": "https://amc.ppfas.com/downloads/parag-parikh-liquid-fund/kim-parag-parikh-liquid-fund.pdf",
+            "file": "ppfas-kim-liquid.pdf",
+            "amfiCodes": [
+                143260, 143261, 143262, 143263, 143264, 143265, 143266, 143269
+            ]
+        },
+        {
+            "id": "ppfas-kim-arbitrage",
+            "title": "KIM: Parag Parikh Arbitrage Fund",
+            "amc": "PPFAS Mutual Fund",
+            "docType": "kim",
+            "asOfDate": "2025-11-27",
+            "sourceUrl": "https://amc.ppfas.com/downloads/parag-parikh-arbitrage-fund/kim-parag-parikh-arbitrage-fund.pdf",
+            "file": "ppfas-kim-arbitrage.pdf",
+            "amfiCodes": [152109, 152110]
+        },
+        {
+            "id": "ppfas-kim-conservative-hybrid",
+            "title": "KIM: Parag Parikh Conservative Hybrid Fund",
+            "amc": "PPFAS Mutual Fund",
+            "docType": "kim",
+            "asOfDate": "2025-11-27",
+            "sourceUrl": "https://amc.ppfas.com/downloads/parag-parikh-conservative-hybrid-fund/kim-parag-parikh-conservative-hybrid-fund.pdf",
+            "file": "ppfas-kim-conservative-hybrid.pdf",
+            "amfiCodes": [148958, 148959, 148960, 148961]
+        },
+        {
+            "id": "ppfas-kim-dynamic-asset-allocation",
+            "title": "KIM: Parag Parikh Dynamic Asset Allocation Fund",
+            "amc": "PPFAS Mutual Fund",
+            "docType": "kim",
+            "asOfDate": "2025-11-27",
+            "sourceUrl": "https://amc.ppfas.com/downloads/parag-parikh-dynamic-asset-allocation-fund/kim-parag-parikh-dynamic-asset-allocation-fund.pdf",
+            "file": "ppfas-kim-dynamic-asset-allocation.pdf",
+            "amfiCodes": [152464, 152467, 152468, 152469]
+        },
+        {
+            "id": "ppfas-factsheet-2026-09",
+            "title": "PPFAS Mutual Fund factsheet, September 2026",
+            "amc": "PPFAS Mutual Fund",
+            "docType": "factsheet",
+            "asOfDate": "2026-09-30",
+            "sourceUrl": "https://amc.ppfas.com/downloads/factsheet/2026/ppfas-mf-factsheet-for-September-2026.pdf",
+            "file": "ppfas-factsheet-2026-09.pdf",
+            "amfiCodes": [
+                122639, 122640, 143260, 143261, 143262, 143263, 143264, 143265,
+                143266, 143269, 147481, 147482, 148958, 148959, 148960, 148961,
+                152109, 152110, 152464, 152467, 152468, 152469, 153964, 153965,
+                154153, 154154, 154155, 154156
+            ]
+        },
+        {
+            "id": "uti-kim-nifty-50-index",
+            "title": "KIM: UTI Nifty 50 Index Fund",
+            "amc": "UTI Mutual Fund",
+            "docType": "kim",
+            "asOfDate": "2024-11-15",
+            "sourceUrl": "https://d50le8fqeqn06.cloudfront.net/utimf-job/kim/KIM_UTI+Nifty+50+Index+Fund+November+2024-128.pdf",
+            "file": "uti-kim-nifty-50-index.pdf",
+            "amfiCodes": [100822, 100823, 120716, 120717]
+        },
+        {
+            "id": "hdfc-kim-flexi-cap",
+            "title": "KIM: HDFC Flexi Cap Fund",
+            "amc": "HDFC Mutual Fund",
+            "docType": "kim",
+            "asOfDate": "2025-05-30",
+            "sourceUrl": "https://files.hdfcfund.com/s3fs-public/KIM/2025-05/KIM%20-%20HDFC%20Flexi%20Cap%20Fund%20dated%20May%2030%2C%202025.pdf",
+            "file": "hdfc-kim-flexi-cap.pdf",
+            "amfiCodes": [101762, 101763, 118954, 118955]
+        },
+        {
+            "id": "nippon-factsheet-2026-10",
+            "title": "Nippon India Mutual Fund factsheet, October 2026",
+            "amc": "Nippon India Mutual Fund",
+            "docType": "factsheet",
+            "asOfDate": "2026-10-31",
+            "sourceUrl": "https://mf.nipponindiaim.com/InvestorServices/FactSheetsDocuments/Nippon-FS-October-2026.pdf",
+            "file": "nippon-factsheet-2026-10.pdf",
+            "sections": [
+                {
+                    "fund": "Nippon India Large Cap Fund",
+                    "startPage": 6,
+                    "endPage": 8,
+                    "amfiCodes": [
+                        106235, 106236, 106238, 106240, 118632, 118633, 118634
+                    ]
+                },
+                {
+                    "fund": "Nippon India Vision Large & Mid Cap Fund",
+                    "startPage": 9,
+                    "endPage": 11,
+                    "amfiCodes": [
+                        100378, 100379, 100380, 106255, 118675, 118676, 118678
+                    ]
+                },
+                {
+                    "fund": "Nippon India Quant Fund",
+                    "startPage": 12,
+                    "endPage": 14,
+                    "amfiCodes": [
+                        108249, 108252, 108258, 118767, 118769, 118770
+                    ]
+                },
+                {
+                    "fund": "Nippon India Growth Mid Cap Fund",
+                    "startPage": 15,
+                    "endPage": 17,
+                    "amfiCodes": [
+                        100375, 100376, 100377, 106260, 118665, 118666, 118668
+                    ]
+                },
+                {
+                    "fund": "Nippon India Focused Fund",
+                    "startPage": 18,
+                    "endPage": 20,
+                    "amfiCodes": [104637, 104638, 118692, 118693]
+                },
+                {
+                    "fund": "Nippon India Small Cap Fund",
+                    "startPage": 21,
+                    "endPage": 23,
+                    "amfiCodes": [
+                        113177, 113178, 113179, 118775, 118777, 118778
+                    ]
+                },
+                {
+                    "fund": "Nippon India Value Fund",
+                    "startPage": 24,
+                    "endPage": 26,
+                    "amfiCodes": [103085, 103086, 118782, 118784]
+                },
+                {
+                    "fund": "Nippon India Multi Cap Fund",
+                    "startPage": 27,
+                    "endPage": 29,
+                    "amfiCodes": [
+                        101161, 101162, 101163, 106252, 106253, 118650, 118651,
+                        118652
+                    ]
+                },
+                {
+                    "fund": "Nippon India Flexi Cap Fund",
+                    "startPage": 30,
+                    "endPage": 32,
+                    "amfiCodes": [149089, 149094, 149095, 149096]
+                },
+                {
+                    "fund": "Nippon India ELSS Tax Saver Fund",
+                    "startPage": 33,
+                    "endPage": 35,
+                    "amfiCodes": [
+                        103196, 103197, 118801, 118803, 133865, 133866
+                    ]
+                },
+                {
+                    "fund": "Nippon India Banking & Financial Services Fund",
+                    "startPage": 36,
+                    "endPage": 38,
+                    "amfiCodes": [
+                        101862, 101863, 101864, 118588, 118589, 118591
+                    ]
+                },
+                {
+                    "fund": "Nippon India Power & Infra Fund",
+                    "startPage": 39,
+                    "endPage": 41,
+                    "amfiCodes": [
+                        101262, 101263, 101264, 118760, 118762, 118763
+                    ]
+                },
+                {
+                    "fund": "Nippon India Pharma Fund",
+                    "startPage": 42,
+                    "endPage": 44,
+                    "amfiCodes": [
+                        102431, 102432, 102433, 118756, 118758, 118759
+                    ]
+                },
+                {
+                    "fund": "Nippon India Consumption Fund",
+                    "startPage": 45,
+                    "endPage": 47,
+                    "amfiCodes": [
+                        102751, 102752, 102753, 118722, 118724, 118725
+                    ]
+                },
+                {
+                    "fund": "Nippon India Japan Equity Fund",
+                    "startPage": 48,
+                    "endPage": 50,
+                    "amfiCodes": [
+                        130858, 130859, 130860, 130861, 130863, 130864
+                    ]
+                },
+                {
+                    "fund": "Nippon India US Equity Opportunities Fund",
+                    "startPage": 51,
+                    "endPage": 53,
+                    "amfiCodes": [134922, 134923, 134924, 134925]
+                },
+                {
+                    "fund": "Nippon India Taiwan Equity Fund",
+                    "startPage": 54,
+                    "endPage": 56,
+                    "amfiCodes": [149325, 149327, 149328, 149329]
+                },
+                {
+                    "fund": "Nippon India Innovation Fund",
+                    "startPage": 57,
+                    "endPage": 59,
+                    "amfiCodes": [152033, 152034, 152035, 152036]
+                },
+                {
+                    "fund": "Nippon India Active Momentum Fund",
+                    "startPage": 60,
+                    "endPage": 62,
+                    "amfiCodes": [153274, 153276, 153277, 153278]
+                },
+                {
+                    "fund": "Nippon India MNC Fund",
+                    "startPage": 63,
+                    "endPage": 65,
+                    "amfiCodes": [153690, 153691, 153692, 153693]
+                },
+                {
+                    "fund": "Nippon India Overnight Fund",
+                    "startPage": 66,
+                    "endPage": 68,
+                    "amfiCodes": [
+                        145810, 145811, 145812, 145823, 145824, 145825, 145826,
+                        145827, 145830, 145833
+                    ]
+                },
+                {
+                    "fund": "Nippon India Liquid Fund",
+                    "startPage": 69,
+                    "endPage": 71,
+                    "amfiCodes": [
+                        100837, 100838, 100842, 100843, 100844, 100845, 100848,
+                        100849, 100851, 100852, 100853, 100855, 112340, 114251,
+                        114252, 118695, 118696, 118698, 118700, 118701
+                    ]
+                },
+                {
+                    "fund": "Nippon India Money Market Fund",
+                    "startPage": 72,
+                    "endPage": 74,
+                    "amfiCodes": [
+                        103048, 103049, 103050, 103051, 103052, 112341, 118715,
+                        118716, 118717, 118718, 118719, 118720
+                    ]
+                },
+                {
+                    "fund": "Nippon India Ultra Short Term Fund",
+                    "startPage": 75,
+                    "endPage": 77,
+                    "amfiCodes": [
+                        143493, 143494, 143495, 143496, 143497, 143498, 143499,
+                        143500, 143501, 143502, 147673, 147674, 147675, 147676,
+                        147677, 147678, 147679, 147680, 147681, 147682
+                    ]
+                },
+                {
+                    "fund": "Nippon India Ultra Short to Short Term Fund",
+                    "startPage": 78,
+                    "endPage": 80,
+                    "amfiCodes": [
+                        111743, 111744, 111745, 111746, 111747, 111748, 111749,
+                        111750, 111751, 111752, 111753, 111754, 118702, 118703,
+                        118704, 118705, 118706, 118709, 125264, 125265
+                    ]
+                },
+                {
+                    "fund": "Nippon India Corporate Bond Fund",
+                    "startPage": 81,
+                    "endPage": 83,
+                    "amfiCodes": [
+                        100856, 100857, 100858, 100859, 109472, 109473, 118807,
+                        118808, 118809, 118811, 118812, 118814, 125266, 125267
+                    ]
+                },
+                {
+                    "fund": "Nippon India Banking and PSU Debt Fund",
+                    "startPage": 84,
+                    "endPage": 86,
+                    "amfiCodes": [
+                        134545, 134546, 134547, 134548, 134549, 134550, 134551,
+                        134552, 134553, 134554, 134555, 134556
+                    ]
+                },
+                {
+                    "fund": "Nippon India Floating Interest Rates Fund",
+                    "startPage": 87,
+                    "endPage": 89,
+                    "amfiCodes": [
+                        102673, 102675, 102676, 102677, 112942, 118654, 118655,
+                        118656, 118660, 118661, 124589, 124590
+                    ]
+                },
+                {
+                    "fund": "Nippon India Short Term Fund",
+                    "startPage": 90,
+                    "endPage": 92,
+                    "amfiCodes": [
+                        101665, 101667, 101669, 118796, 118797, 118800, 125268,
+                        125269
+                    ]
+                },
+                {
+                    "fund": "Nippon India Nivesh Lakshya Long Term Fund",
+                    "startPage": 93,
+                    "endPage": 95,
+                    "amfiCodes": [
+                        143701, 143702, 143703, 143704, 143705, 143706, 143707,
+                        143708, 143709, 143710, 143711, 143712
+                    ]
+                },
+                {
+                    "fund": "Nippon India Medium to Long Term Fund",
+                    "startPage": 102,
+                    "endPage": 104,
+                    "amfiCodes": [
+                        100383, 100384, 100385, 100386, 100387, 100388, 118679,
+                        118680, 118681, 118683, 118684, 118687
+                    ]
+                },
+                {
+                    "fund": "Nippon India Dynamic Term Fund",
+                    "startPage": 105,
+                    "endPage": 107,
+                    "amfiCodes": [
+                        102849, 102851, 117974, 118747, 118749, 118750
+                    ]
+                },
+                {
+                    "fund": "Nippon India Gilt Fund",
+                    "startPage": 108,
+                    "endPage": 110,
+                    "amfiCodes": [
+                        109716, 109717, 109718, 109720, 109721, 109723, 109724,
+                        118669, 118670, 118672, 118673, 118674, 133264, 133265
+                    ]
+                },
+                {
+                    "fund": "Nippon India Balanced Advantage Fund",
+                    "startPage": 111,
+                    "endPage": 113,
+                    "amfiCodes": [
+                        102846, 102847, 102848, 118736, 118737, 118738
+                    ]
+                },
+                {
+                    "fund": "Nippon India Arbitrage Fund",
+                    "startPage": 120,
+                    "endPage": 122,
+                    "amfiCodes": [
+                        113345, 113346, 118585, 118587, 128820, 128821
+                    ]
+                },
+                {
+                    "fund": "Nippon India Multi Asset Allocation Fund",
+                    "startPage": 126,
+                    "endPage": 128,
+                    "amfiCodes": [148457, 148458, 148459, 148460]
+                },
+                {
+                    "fund": "Nippon India Index Fund - Nifty 50 Plan",
+                    "startPage": 129,
+                    "endPage": 131,
+                    "amfiCodes": [
+                        113296, 113297, 113298, 113299, 113300, 118740, 118741,
+                        118742, 118743, 118745
+                    ]
+                },
+                {
+                    "fund": "Nippon India Index Fund - BSE Sensex Plan",
+                    "startPage": 132,
+                    "endPage": 134,
+                    "amfiCodes": [
+                        113269, 113270, 113271, 113294, 113295, 118785, 118786,
+                        118788, 118790, 118791
+                    ]
+                },
+                {
+                    "fund": "Nippon India Nifty Smallcap 250 Index Fund",
+                    "startPage": 135,
+                    "endPage": 137,
+                    "amfiCodes": [148518, 148519, 148520, 148521]
+                },
+                {
+                    "fund": "Nippon India Nifty Midcap 150 Index Fund",
+                    "startPage": 138,
+                    "endPage": 140,
+                    "amfiCodes": [148723, 148724, 148725, 148726]
+                }
+            ]
+        },
+        {
+            "id": "axis-factsheet-2026-07",
+            "title": "Axis Mutual Fund factsheet, July 2026",
+            "amc": "Axis Mutual Fund",
+            "docType": "factsheet",
+            "asOfDate": "2026-07-31",
+            "sourceUrl": "https://www.axismf.com/1/5/1423/1484/1487/2872/4561/Axis_Fund_Factsheet_July_2026_2412c4ee93.pdf",
+            "file": "axis-factsheet-2026-07.pdf",
+            "sections": [
+                {
+                    "fund": "Axis Large Cap Fund",
+                    "startPage": 8,
+                    "endPage": 8,
+                    "amfiCodes": [112277, 112278, 120465, 120466]
+                }
+            ]
+        }
+    ]
+}
