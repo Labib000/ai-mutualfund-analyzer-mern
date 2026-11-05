@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
  */
 export default function FundFactsCard({ stats }: { stats: FundStatsJson }) {
     return (
-        <Card className="gap-0 pb-0 sm:pb-0">
+        <Card className="@container gap-0 pb-0 sm:gap-0 sm:pb-0">
             <CardHeader className="pb-4 sm:pb-5">
                 <CardTitle>Fund facts</CardTitle>
                 <CardDescription>
@@ -27,7 +27,7 @@ export default function FundFactsCard({ stats }: { stats: FundStatsJson }) {
                 </CardDescription>
             </CardHeader>
             <CardContent className="px-0 sm:px-0">
-                <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-b-xl border-t bg-border sm:grid-cols-3 xl:grid-cols-6">
+                <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-b-xl border-t bg-border @lg:grid-cols-3 @5xl:grid-cols-6">
                     <Fact label="1 year">
                         <Return pct={stats.return1yPct} />
                     </Fact>

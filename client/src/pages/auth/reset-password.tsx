@@ -4,6 +4,8 @@ import { Form } from '@/components/form';
 import { Head } from '@/components/head';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import TextLink from '@/components/text-link';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,6 +36,21 @@ export default function ResetPassword() {
             >
                 {({ processing, errors }) => (
                     <div className="grid gap-6">
+                        {/* The only error on this read-only field: a bad link. */}
+                        {errors.email && (
+                            <Alert variant="destructive">
+                                <AlertDescription>
+                                    <p>
+                                        This reset link is invalid or has
+                                        expired.{' '}
+                                        <TextLink to="/forgot-password">
+                                            Request a new link
+                                        </TextLink>
+                                    </p>
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
                         <div className="grid gap-2">
                             <Label htmlFor="email">Email</Label>
                             <Input
@@ -44,10 +61,6 @@ export default function ResetPassword() {
                                 value={email}
                                 className="mt-1 block w-full"
                                 readOnly
-                            />
-                            <InputError
-                                message={errors.email}
-                                className="mt-2"
                             />
                         </div>
 

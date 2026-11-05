@@ -48,8 +48,10 @@ export default function ChangeCard({
     if (!change) return null;
 
     return (
-        <Card className={cn('gap-0 pb-0 sm:pb-0', className)}>
-            <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:justify-between sm:pb-5">
+        <Card
+            className={cn('@container gap-0 pb-0 sm:gap-0 sm:pb-0', className)}
+        >
+            <CardHeader className="flex flex-col gap-3 pb-4 sm:pb-5 @lg:flex-row @lg:items-start @lg:justify-between">
                 <div className="min-w-0 space-y-1">
                     <CardTitle>What changed</CardTitle>
                     <CardDescription>
@@ -67,13 +69,13 @@ export default function ChangeCard({
                         next && setPeriod(next as ChangePeriod)
                     }
                     aria-label="Period"
-                    className="w-full shrink-0 sm:w-auto"
+                    className="w-full shrink-0 @lg:w-auto"
                 >
                     {CHANGE_PERIODS.filter((key) => changes[key]).map((key) => (
                         <ToggleGroupItem
                             key={key}
                             value={key}
-                            className="flex-1 px-3 sm:flex-none"
+                            className="flex-1 px-3 @lg:flex-none"
                         >
                             {PERIOD_LABELS[key]}
                         </ToggleGroupItem>
@@ -82,7 +84,7 @@ export default function ChangeCard({
             </CardHeader>
 
             <CardContent className="px-0 sm:px-0">
-                <dl className="grid grid-cols-1 gap-px border-y bg-border sm:grid-cols-3">
+                <dl className="grid grid-cols-1 gap-px border-y bg-border @2xl:grid-cols-3">
                     <Figure label="Change in value">
                         <Gain paise={change.endPaise - change.startPaise} />
                     </Figure>
@@ -103,7 +105,7 @@ export default function ChangeCard({
                 </dl>
 
                 {(change.best || change.worst) && (
-                    <div className="grid gap-x-6 gap-y-3 px-4 py-4 text-sm sm:grid-cols-2 sm:px-6 sm:py-5">
+                    <div className="grid gap-x-6 gap-y-3 px-4 py-4 text-sm sm:px-6 sm:py-5 @lg:grid-cols-2">
                         {change.best && (
                             <Mover label="Moved most" fund={change.best} />
                         )}
@@ -129,14 +131,14 @@ function Figure({
     children: ReactNode;
 }) {
     return (
-        <div className="flex items-baseline justify-between gap-3 bg-card px-4 py-3 sm:block sm:space-y-1 sm:px-6 sm:py-4">
-            <dt className="text-sm text-muted-foreground sm:text-xs">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 bg-card px-4 py-3 sm:px-6 sm:py-4 @2xl:block @2xl:space-y-1">
+            <dt className="text-sm text-muted-foreground @2xl:text-xs">
                 {label}
                 {note && (
-                    <span className="hidden text-xs xl:block">{note}</span>
+                    <span className="hidden text-xs @2xl:block">{note}</span>
                 )}
             </dt>
-            <dd className="font-display text-base font-semibold whitespace-nowrap sm:text-lg">
+            <dd className="font-display text-base font-semibold whitespace-nowrap @2xl:text-lg @2xl:whitespace-normal">
                 {children}
             </dd>
         </div>
@@ -183,7 +185,7 @@ function Explain({ period }: { period: ChangePeriod }) {
                         <Button
                             variant="outline"
                             size="sm"
-                            className="w-full sm:w-auto"
+                            className="w-full @lg:w-auto"
                             onClick={() => ai.run('/ai/digest', { period })}
                         >
                             {ai.error ? 'Try again' : 'Explain this'}

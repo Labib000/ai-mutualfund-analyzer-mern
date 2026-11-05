@@ -32,7 +32,6 @@ import { Separator } from '@/components/ui/separator';
 import { useDashboard } from '@/hooks/use-portfolio';
 import { useUser } from '@/hooks/use-user';
 import { formatDate } from '@/lib/format';
-import { cn } from '@/lib/utils';
 
 /** Port of pages/dashboard; the insights, AI summary and change cards arrive in Phases 3 and 4. */
 export default function Dashboard() {
@@ -69,7 +68,7 @@ export default function Dashboard() {
             <Head title="Dashboard" />
 
             {/* One opacity fade for the page; cheap enough for low-end phones. */}
-            <div className="flex flex-1 animate-in flex-col gap-4 p-4 duration-300 fade-in sm:gap-6 md:p-6">
+            <div className="@container flex flex-1 animate-in flex-col gap-4 p-4 duration-300 fade-in sm:gap-6 md:p-6">
                 <PageHeader
                     valuedOn={summary.valuedOn}
                     hasFunds={fundCount > 0}
@@ -81,40 +80,16 @@ export default function Dashboard() {
                     <>
                         <PortfolioSummary summary={summary} />
 
-                        {(hasChanges || hasInsights) && (
-                            <div className="grid items-start gap-4 sm:gap-6 xl:grid-cols-5">
-                                {hasInsights && (
-                                    <InsightsCard
-                                        insights={insights}
-                                        className={
-                                            hasChanges
-                                                ? 'xl:col-span-2'
-                                                : 'xl:col-span-5'
-                                        }
-                                    />
-                                )}
-                                <ChangeCard
-                                    changes={changes}
-                                    className={cn(
-                                        'xl:row-start-1',
-                                        hasInsights
-                                            ? 'xl:col-span-3'
-                                            : 'xl:col-span-5',
-                                    )}
-                                />
-                            </div>
-                        )}
-
                         <AiSummaryCard />
 
                         {(showChart || showAllocation) && (
-                            <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 2xl:grid-cols-5">
+                            <div className="grid gap-4 sm:gap-6 @4xl:grid-cols-3 @7xl:grid-cols-5">
                                 {showChart && (
                                     <Card
                                         className={
                                             showAllocation
-                                                ? 'min-w-0 lg:col-span-2 2xl:col-span-3'
-                                                : 'min-w-0 lg:col-span-3 2xl:col-span-5'
+                                                ? 'min-w-0 @4xl:col-span-2 @7xl:col-span-3'
+                                                : 'min-w-0 @4xl:col-span-3 @7xl:col-span-5'
                                         }
                                     >
                                         <SectionHeader
@@ -131,8 +106,8 @@ export default function Dashboard() {
                                     <Card
                                         className={
                                             showChart
-                                                ? 'min-w-0 2xl:col-span-2'
-                                                : 'min-w-0 lg:col-span-3 2xl:col-span-5'
+                                                ? '@container min-w-0 @7xl:col-span-2'
+                                                : '@container min-w-0 @4xl:col-span-3 @7xl:col-span-5'
                                         }
                                     >
                                         <SectionHeader
@@ -155,7 +130,30 @@ export default function Dashboard() {
                             </div>
                         )}
 
-                        <Card className="gap-4 pb-0 lg:pb-6">
+                        {(hasChanges || hasInsights) && (
+                            <div className="grid gap-4 sm:gap-6 @6xl:grid-cols-5">
+                                <ChangeCard
+                                    changes={changes}
+                                    className={
+                                        hasInsights
+                                            ? 'min-w-0 @6xl:col-span-3'
+                                            : 'min-w-0 @6xl:col-span-5'
+                                    }
+                                />
+                                {hasInsights && (
+                                    <InsightsCard
+                                        insights={insights}
+                                        className={
+                                            hasChanges
+                                                ? 'min-w-0 @6xl:col-span-2'
+                                                : 'min-w-0 @6xl:col-span-5'
+                                        }
+                                    />
+                                )}
+                            </div>
+                        )}
+
+                        <Card className="gap-4 pb-0 sm:gap-4 sm:pb-0 @4xl:pb-6">
                             <CardHeader className="flex flex-row items-center justify-between gap-3">
                                 <CardTitle>
                                     {fundCount > topHoldings.length
@@ -174,7 +172,7 @@ export default function Dashboard() {
                                     </Link>
                                 </Button>
                             </CardHeader>
-                            <CardContent className="px-0 lg:px-6">
+                            <CardContent className="px-0 sm:px-0 @4xl:px-6">
                                 <HoldingsTable
                                     holdings={topHoldings}
                                     compact

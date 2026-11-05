@@ -5,132 +5,153 @@ import { toast } from 'sonner';
 import DeleteUser from '@/components/delete-user';
 import { Form } from '@/components/form';
 import { Head } from '@/components/head';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
-import { textLinkClass } from '@/components/text-link';
+import {
+    SettingsCard,
+    SettingsCardBody,
+    SettingsCardFooter,
+} from '@/components/settings/settings-card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { useSetUser, useUser } from '@/hooks/use-user';
-import { api } from '@/lib/api';
+import { ApiError, api } from '@/lib/api';
 
 export default function Profile() {
     const user = useUser();
     const setUser = useSetUser();
-    const [status, setStatus] = useState<string>();
-
-    const resendVerification = async () => {
-        const data = await api<{ status: string }>(
-            '/auth/email/verification-notification',
-            {
-                method: 'POST',
-            },
-        ).catch(() => undefined);
-        setStatus(data?.status);
-    };
+    const [email, setEmail] = useState(user.email);
+    const emailChanged = email.trim().toLowerCase() !== user.email;
+    const verified = user.emailVerifiedAt !== null;
 
     return (
         <>
             <Head title="Profile settings" />
 
-            <h1 className="sr-only">Profile settings</h1>
-
-            <div className="space-y-6">
-                <Heading
-                    variant="small"
-                    title="Profile"
-                    description="Update your name and email address"
-                />
-
+            <SettingsCard
+                title="Personal details"
+                description="Your name appears across Hisaab. Your email is how you sign in."
+            >
                 <Form<{ user: User; message: string }>
                     action="/settings/profile"
                     method="patch"
                     onSuccess={(data) => {
                         setUser(data.user);
+                        setEmail(data.user.email);
                         toast.success(data.message);
                     }}
-                    className="space-y-6"
                 >
                     {({ processing, errors }) => (
                         <>
-                            <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
+                            <SettingsCardBody className="space-y-5">
+                                {!verified && <VerifyNotice />}
 
-                                <Input
-                                    id="name"
-                                    className="mt-1 block w-full"
-                                    defaultValue={user.name}
-                                    name="name"
-                                    required
-                                    autoComplete="name"
-                                    placeholder="Full name"
-                                />
+                                <div className="grid gap-5 @xl:grid-cols-2">
+                                    <div className="grid content-start gap-2">
+                                        <Label htmlFor="name">Name</Label>
+                                        <Input
+                                            id="name"
+                                            defaultValue={user.name}
+                                            name="name"
+                                            required
+                                            autoComplete="name"
+                                            placeholder="Full name"
+                                        />
+                                        <InputError message={errors.name} />
+                                    </div>
 
-                                <InputError
-                                    className="mt-2"
-                                    message={errors.name}
-                                />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    className="mt-1 block w-full"
-                                    defaultValue={user.email}
-                                    name="email"
-                                    required
-                                    autoComplete="username"
-                                    placeholder="Email address"
-                                />
-
-                                <InputError
-                                    className="mt-2"
-                                    message={errors.email}
-                                />
-                            </div>
-
-                            {user.emailVerifiedAt === null && (
-                                <div>
-                                    <p className="-mt-4 text-sm text-muted-foreground">
-                                        Your email address is unverified.{' '}
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                void resendVerification()
+                                    <div className="grid content-start gap-2">
+                                        <Label htmlFor="email">
+                                            Email address
+                                        </Label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            defaultValue={user.email}
+                                            onChange={(event) =>
+                                                setEmail(event.target.value)
                                             }
-                                            className={textLinkClass}
-                                        >
-                                            Click here to re-send the
-                                            verification email.
-                                        </button>
-                                    </p>
-
-                                    {status === 'verification-link-sent' && (
-                                        <div className="mt-2 text-sm font-medium text-green-600">
-                                            A new verification link has been
-                                            sent to your email address.
-                                        </div>
-                                    )}
+                                            name="email"
+                                            required
+                                            autoComplete="username"
+                                            placeholder="Email address"
+                                        />
+                                        <InputError message={errors.email} />
+                                    </div>
                                 </div>
-                            )}
 
-                            <div className="flex items-center gap-4">
+                                {emailChanged && (
+                                    <p className="text-sm text-muted-foreground">
+                                        We'll send a link to the new address to
+                                        verify it. Your portfolio is unavailable
+                                        until you do.
+                                    </p>
+                                )}
+                            </SettingsCardBody>
+
+                            <SettingsCardFooter>
                                 <Button
                                     disabled={processing}
+                                    className="w-full sm:w-auto"
                                     data-test="update-profile-button"
                                 >
-                                    Save
+                                    {processing && <Spinner />}
+                                    Save changes
                                 </Button>
-                            </div>
+                            </SettingsCardFooter>
                         </>
                     )}
                 </Form>
-            </div>
+            </SettingsCard>
 
-            {user.emailVerifiedAt !== null && <DeleteUser />}
+            {verified && <DeleteUser />}
         </>
+    );
+}
+
+function VerifyNotice() {
+    const [sending, setSending] = useState(false);
+
+    const resend = async () => {
+        setSending(true);
+
+        try {
+            await api('/auth/email/verification-notification', {
+                method: 'POST',
+            });
+            toast.success('A new verification link is on its way.');
+        } catch (error) {
+            toast.error(
+                error instanceof ApiError
+                    ? error.message
+                    : 'Something went wrong. Please try again.',
+            );
+        } finally {
+            setSending(false);
+        }
+    };
+
+    return (
+        <Alert>
+            <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                    Your email address isn't verified yet. Check your inbox for
+                    the link.
+                </span>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={sending}
+                    onClick={() => void resend()}
+                    className="w-full shrink-0 sm:w-auto"
+                >
+                    {sending && <Spinner />}
+                    Resend link
+                </Button>
+            </AlertDescription>
+        </Alert>
     );
 }

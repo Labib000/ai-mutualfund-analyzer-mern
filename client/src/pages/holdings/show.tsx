@@ -286,8 +286,8 @@ export default function HoldingShow() {
                         )}
                     </CardHeader>
                     {transactions.length > 0 && (
-                        <CardContent className="px-0 sm:px-0 lg:px-0">
-                            <ul className="divide-y border-t lg:hidden">
+                        <CardContent className="@container px-0 sm:px-0">
+                            <ul className="divide-y border-t @4xl:hidden">
                                 {txnPage.items.map((transaction) => (
                                     <TransactionCard
                                         key={transaction.id}
@@ -296,7 +296,7 @@ export default function HoldingShow() {
                                     />
                                 ))}
                             </ul>
-                            <div className="hidden overflow-x-auto lg:block">
+                            <div className="hidden overflow-x-auto @4xl:block">
                                 <table className="w-full text-sm">
                                     <thead className="text-left text-muted-foreground">
                                         <tr>
@@ -514,7 +514,7 @@ function TransactionRow({
     );
 }
 
-/** Below laptop width: one compact card per transaction instead of a six-column table. */
+/** When the card is narrow: one compact card per transaction instead of a six-column table. */
 function TransactionCard({
     transaction,
     holdingId,
@@ -525,9 +525,9 @@ function TransactionCard({
     const navDiffers = transaction.navDate !== transaction.txnDate;
 
     return (
-        <li className="flex items-start gap-3 px-4 py-3">
+        <li className="flex items-start gap-3 px-4 py-3 sm:px-6">
             <div className="min-w-0 flex-1 space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-medium whitespace-nowrap">
                             {formatDate(transaction.txnDate)}

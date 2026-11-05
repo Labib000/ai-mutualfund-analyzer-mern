@@ -20,6 +20,8 @@ const userSchema = new Schema(
         },
         passwordHash: { type: String, required: true },
         emailVerifiedAt: { type: Date, default: null },
+        /** Changes with each new profile photo; null when there is none. */
+        avatarVersion: { type: String, default: null },
     },
     { timestamps: true },
 );
@@ -36,5 +38,8 @@ export function toUserJson(user: UserDoc): UserJson {
         email: user.email,
         emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
         createdAt: user.createdAt.toISOString(),
+        avatarUrl: user.avatarVersion
+            ? `/api/settings/avatar?v=${user.avatarVersion}`
+            : null,
     };
 }

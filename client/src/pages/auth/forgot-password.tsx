@@ -11,22 +11,56 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default function ForgotPassword() {
-    const [status, setStatus] = useState<string>();
+    const [email, setEmail] = useState('');
+    const [sent, setSent] = useState(false);
+
+    if (sent) {
+        return (
+            <>
+                <Head title="Check your email" />
+
+                <div className="space-y-5 text-center" role="status">
+                    <div className="space-y-2">
+                        <p className="font-medium">Check your email</p>
+                        <p className="text-sm text-muted-foreground">
+                            If an account exists for{' '}
+                            <span className="font-medium break-all text-foreground">
+                                {email}
+                            </span>
+                            , a reset link is on its way. It works for 60
+                            minutes. If you don't see it, check your spam
+                            folder.
+                        </p>
+                    </div>
+
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => {
+                            setEmail('');
+                            setSent(false);
+                        }}
+                    >
+                        Use a different email
+                    </Button>
+
+                    <div className="space-x-1 text-sm text-muted-foreground">
+                        <span>Or, return to</span>
+                        <TextLink to="/login">log in</TextLink>
+                    </div>
+                </div>
+            </>
+        );
+    }
 
     return (
         <>
             <Head title="Forgot password" />
 
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
-
             <div className="space-y-6">
                 <Form<{ status: string }>
                     action="/auth/forgot-password"
-                    onSuccess={(data) => setStatus(data.status)}
+                    onSuccess={() => setSent(true)}
                 >
                     {({ processing, errors }) => (
                         <>
@@ -36,7 +70,11 @@ export default function ForgotPassword() {
                                     id="email"
                                     type="email"
                                     name="email"
-                                    autoComplete="off"
+                                    defaultValue={email}
+                                    onChange={(event) =>
+                                        setEmail(event.target.value)
+                                    }
+                                    autoComplete="email"
                                     autoFocus
                                     placeholder="email@example.com"
                                 />

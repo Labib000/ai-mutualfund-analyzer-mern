@@ -72,14 +72,14 @@ export default function AllocationBar({
                         />
                         <span className="min-w-0 flex-1">
                             {assetClass.label}
-                            <span className="block text-xs text-muted-foreground tabular-nums sm:hidden">
+                            <span className="block text-xs text-muted-foreground tabular-nums @md:hidden">
                                 {formatPaise(assetClass.valuePaise)}
                             </span>
                         </span>
                         <span className="font-medium tabular-nums">
                             {formatPercent(assetClass.pct)}
                         </span>
-                        <span className="hidden w-28 shrink-0 text-right text-muted-foreground tabular-nums sm:block">
+                        <span className="hidden w-32 shrink-0 text-right text-muted-foreground tabular-nums @md:block">
                             {formatPaise(assetClass.valuePaise)}
                         </span>
                     </li>

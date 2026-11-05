@@ -26,14 +26,14 @@ export default function CategoryList({
                             >
                                 {category.label}
                             </span>
-                            <span className="block text-xs text-muted-foreground tabular-nums sm:hidden">
+                            <span className="block text-xs text-muted-foreground tabular-nums @md:hidden">
                                 {formatPaise(category.valuePaise)}
                             </span>
                         </span>
                         <span className="font-medium tabular-nums">
                             {formatPercent(category.pct)}
                         </span>
-                        <span className="hidden w-28 shrink-0 text-right text-muted-foreground tabular-nums sm:block">
+                        <span className="hidden w-32 shrink-0 text-right text-muted-foreground tabular-nums @md:block">
                             {formatPaise(category.valuePaise)}
                         </span>
                     </div>

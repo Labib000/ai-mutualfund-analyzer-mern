@@ -105,7 +105,12 @@ export type User = {
     /** ISO timestamp, or null while unverified. */
     emailVerifiedAt: string | null;
     createdAt: string;
+    /** The profile photo; the URL changes with the photo. Null when none is set. */
+    avatarUrl: string | null;
 };
+
+/** GET /api/settings/summary */
+export type SettingsSummaryResponse = { fundCount: number };
 
 /** GET /api/auth/me */
 export type MeResponse = {

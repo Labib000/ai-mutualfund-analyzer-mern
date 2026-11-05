@@ -51,7 +51,7 @@ export default function RangeBar({
             </div>
             <div
                 aria-hidden="true"
-                className="flex justify-between gap-1 text-[11px] text-muted-foreground tabular-nums"
+                className="flex flex-wrap justify-between gap-x-1 text-[11px] text-muted-foreground tabular-nums"
             >
                 <span>{pct(range.min)}</span>
                 <span>{pct(range.max)}</span>

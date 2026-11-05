@@ -28,9 +28,12 @@ export default function Gain({
         <span className={cn('tabular-nums', gainTone(paise), className)}>
             {formatSignedPaise(paise)}
             {pct !== undefined && pct !== null && (
-                <span className="ml-1 text-xs">
-                    ({formatPercent(pct, { signed: true })})
-                </span>
+                <>
+                    {/* A real space, so the percentage can wrap when space is tight. */}{' '}
+                    <span className="text-xs">
+                        ({formatPercent(pct, { signed: true })})
+                    </span>
+                </>
             )}
         </span>
     );

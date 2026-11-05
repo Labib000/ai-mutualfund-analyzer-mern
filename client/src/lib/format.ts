@@ -108,6 +108,16 @@ export function formatDate(date: string): string {
     return dateFormat.format(new Date(`${date}T00:00:00Z`));
 }
 
+const monthYearFormat = new Intl.DateTimeFormat('en-IN', {
+    month: 'long',
+    year: 'numeric',
+});
+
+/** "November 2026", from an ISO timestamp. */
+export function formatMonthYear(timestamp: string): string {
+    return monthYearFormat.format(new Date(timestamp));
+}
+
 const dateTimeFormat = new Intl.DateTimeFormat('en-IN', {
     day: 'numeric',
     month: 'short',

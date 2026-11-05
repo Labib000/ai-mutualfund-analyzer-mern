@@ -15,7 +15,8 @@ import { cn } from '@/lib/utils';
 /**
  * Headline figures in one panel.
  * Phones: current value as a hero with the gain under it, then invested and XIRR side by side.
- * Tablets and laptops: 2×2. Wide screens: one row of four.
+ * Wider: 2×2, then one row of four once the panel itself has room (not the
+ * viewport: the open sidebar takes part of it).
  *
  * `variant="fund"` shows a single fund: its gain is the unrealised gain, with
  * realised gains as a note (the portfolio shows the total gain).
@@ -59,15 +60,15 @@ export default function PortfolioSummary({
     );
 
     return (
-        <Card className="gap-0 overflow-hidden py-0 sm:py-0">
+        <Card className="@container gap-0 overflow-hidden py-0 sm:py-0">
             {/* 1px gaps over a border-coloured background draw the dividers for every layout. */}
-            <div className="grid grid-cols-2 gap-px bg-border xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-px bg-border @4xl:grid-cols-4">
                 <Stat
                     label="Current value"
-                    className="col-span-2 sm:col-span-1"
-                    valueClassName="text-3xl sm:text-2xl"
+                    className="col-span-2 @lg:col-span-1"
+                    valueClassName="text-3xl"
                     caption={
-                        <span className="flex flex-wrap items-baseline gap-x-2 sm:hidden">
+                        <span className="flex flex-wrap items-baseline gap-x-2 @lg:hidden">
                             <Gain
                                 paise={gainPaise}
                                 className="text-sm font-medium"
@@ -85,7 +86,7 @@ export default function PortfolioSummary({
 
                 <Stat
                     label={fund ? 'Gain' : 'Total gain'}
-                    className="hidden sm:flex"
+                    className="hidden @lg:flex"
                     caption={
                         <>
                             {returnBadge}
@@ -131,7 +132,7 @@ function Stat({
             <p className="text-xs text-muted-foreground sm:text-sm">{label}</p>
             <div
                 className={cn(
-                    'text-lg font-semibold tracking-tight whitespace-nowrap tabular-nums sm:text-2xl xl:text-xl 2xl:text-2xl',
+                    'text-sm font-semibold tracking-tight whitespace-nowrap tabular-nums @xs:text-base @sm:text-lg @lg:text-2xl @4xl:text-xl @6xl:text-2xl',
                     valueClassName,
                 )}
             >

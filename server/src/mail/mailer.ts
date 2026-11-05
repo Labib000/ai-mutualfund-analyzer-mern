@@ -18,7 +18,7 @@ export interface Mailer {
     send(message: MailMessage): Promise<void>;
 }
 
-/** Real email over SMTP (Hostinger in production). */
+/** Real email over any SMTP server, set by the MAIL_* env values. */
 export class SmtpMailer implements Mailer {
     private readonly transport: Transporter;
 

@@ -23,7 +23,10 @@ export function UserInfo({
                     tone === 'sidebar' && 'ring-1 ring-sidebar-border',
                 )}
             >
-                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarImage
+                    src={user.avatarUrl ?? undefined}
+                    alt={user.name}
+                />
                 <AvatarFallback className="rounded-full bg-primary/10 font-semibold text-primary">
                     {getInitials(user.name)}
                 </AvatarFallback>

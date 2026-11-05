@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { verifyPassword } from '../../src/auth/password.js';
 import { User } from '../../src/models/user.js';
@@ -88,5 +88,56 @@ describe('security settings', () => {
             await client.put('/api/settings/password').send(wrong).expect(422);
         }
         await client.put('/api/settings/password').send(wrong).expect(429);
+    });
+
+    describe('emailing a reset link', () => {
+        const LINK = '/api/settings/password/reset-link';
+
+        it('sends a working link to the signed-in user', async () => {
+            const { agent, mailer } = makeTestApp();
+            const user = await createUser();
+            const client = await loginAs(agent(), user);
+
+            const res = await client.post(LINK).expect(200);
+
+            expect(res.body.message).toContain(user.email);
+            expect(res.body.warning).toBeUndefined();
+            expect(mailer.to(user.email)).toHaveLength(1);
+            expect(mailer.to(user.email)[0]!.subject).toBe(
+                'Reset your password',
+            );
+        });
+
+        it('does not send a second link within a minute', async () => {
+            const { agent, mailer } = makeTestApp();
+            const user = await createUser();
+            const client = await loginAs(agent(), user);
+
+            await client.post(LINK).expect(200);
+            const res = await client.post(LINK).expect(200);
+
+            expect(res.body.warning).toBe(true);
+            expect(mailer.to(user.email)).toHaveLength(1);
+        });
+
+        it('reports a failed send and allows a retry', async () => {
+            const { agent, mailer } = makeTestApp();
+            const user = await createUser();
+            const client = await loginAs(agent(), user);
+            const send = vi
+                .spyOn(mailer, 'send')
+                .mockRejectedValueOnce(new Error('smtp down'));
+
+            await client.post(LINK).expect(503);
+            await client.post(LINK).expect(200);
+
+            expect(send).toHaveBeenCalledTimes(2);
+        });
+
+        it('needs a signed-in user', async () => {
+            const { agent } = makeTestApp();
+
+            await agent().post(LINK).expect(401);
+        });
     });
 });

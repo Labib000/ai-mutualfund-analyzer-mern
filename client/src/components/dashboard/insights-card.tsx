@@ -21,7 +21,7 @@ export default function InsightsCard({
     className?: string;
 }) {
     return (
-        <Card className={cn('gap-0', className)}>
+        <Card className={cn('gap-0 sm:gap-0', className)}>
             <CardHeader className="pb-2">
                 <CardTitle>Insights</CardTitle>
                 <CardDescription>

@@ -2,7 +2,7 @@ import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import type { User as ApiUser } from '@hisaab/shared';
 import type { ReactNode } from 'react';
 
-export type User = ApiUser & { avatar?: string };
+export type User = ApiUser;
 
 export type BreadcrumbItem = {
     title: string;

@@ -33,6 +33,7 @@ export async function api<T>(
     // Headers accepts a plain object, an array of pairs or a Headers instance.
     const headers = new Headers(extraHeaders);
     if (!headers.has('Accept')) headers.set('Accept', 'application/json');
+    const isBlob = body instanceof Blob;
     if (body !== undefined && !headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json');
     }
@@ -41,7 +42,11 @@ export async function api<T>(
         credentials: 'same-origin',
         ...rest,
         headers,
-        body: body !== undefined ? JSON.stringify(body) : undefined,
+        body: isBlob
+            ? body
+            : body !== undefined
+              ? JSON.stringify(body)
+              : undefined,
     });
 
     const isJson = response.headers

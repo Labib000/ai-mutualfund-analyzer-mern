@@ -1,14 +1,21 @@
-import { useRef } from 'react';
+import type { MessageResponse } from '@hisaab/shared';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Form } from '@/components/form';
 import { Head } from '@/components/head';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import {
+    SettingsCard,
+    SettingsCardBody,
+    SettingsCardFooter,
+} from '@/components/settings/settings-card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useMe } from '@/hooks/use-user';
+import { Spinner } from '@/components/ui/spinner';
+import { useMe, useUser } from '@/hooks/use-user';
+import { ApiError, api } from '@/lib/api';
 
 // Phase 6 adds two-factor authentication and passkeys here.
 export default function Security() {
@@ -20,15 +27,10 @@ export default function Security() {
         <>
             <Head title="Security settings" />
 
-            <h1 className="sr-only">Security settings</h1>
-
-            <div className="space-y-6">
-                <Heading
-                    variant="small"
-                    title="Update password"
-                    description="Ensure your account is using a long, random password to stay secure"
-                />
-
+            <SettingsCard
+                title="Change password"
+                description="Use a long password you don't use anywhere else. Your other devices are signed out when you change it."
+            >
                 <Form<{ message: string }>
                     action="/settings/password"
                     method="put"
@@ -50,74 +52,128 @@ export default function Security() {
                             currentPasswordInput.current?.focus();
                         }
                     }}
-                    className="space-y-6"
                 >
                     {({ errors, processing }) => (
                         <>
-                            <div className="grid gap-2">
-                                <Label htmlFor="current_password">
-                                    Current password
-                                </Label>
+                            <SettingsCardBody className="grid gap-5 @xl:grid-cols-2">
+                                <div className="grid content-start gap-2 @xl:col-span-2 @xl:max-w-[calc(50%-0.625rem)]">
+                                    <Label htmlFor="current_password">
+                                        Current password
+                                    </Label>
+                                    <PasswordInput
+                                        id="current_password"
+                                        ref={currentPasswordInput}
+                                        name="current_password"
+                                        autoComplete="current-password"
+                                        placeholder="Current password"
+                                    />
+                                    <InputError
+                                        message={errors.current_password}
+                                    />
+                                </div>
 
-                                <PasswordInput
-                                    id="current_password"
-                                    ref={currentPasswordInput}
-                                    name="current_password"
-                                    className="mt-1 block w-full"
-                                    autoComplete="current-password"
-                                    placeholder="Current password"
-                                />
+                                <div className="grid content-start gap-2">
+                                    <Label htmlFor="password">
+                                        New password
+                                    </Label>
+                                    <PasswordInput
+                                        id="password"
+                                        ref={passwordInput}
+                                        name="password"
+                                        autoComplete="new-password"
+                                        placeholder="New password"
+                                        passwordrules={passwordRules}
+                                    />
+                                    <InputError message={errors.password} />
+                                </div>
 
-                                <InputError message={errors.current_password} />
-                            </div>
+                                <div className="grid content-start gap-2">
+                                    <Label htmlFor="password_confirmation">
+                                        Confirm password
+                                    </Label>
+                                    <PasswordInput
+                                        id="password_confirmation"
+                                        name="password_confirmation"
+                                        autoComplete="new-password"
+                                        placeholder="Confirm password"
+                                        passwordrules={passwordRules}
+                                    />
+                                    <InputError
+                                        message={errors.password_confirmation}
+                                    />
+                                </div>
+                            </SettingsCardBody>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">New password</Label>
-
-                                <PasswordInput
-                                    id="password"
-                                    ref={passwordInput}
-                                    name="password"
-                                    className="mt-1 block w-full"
-                                    autoComplete="new-password"
-                                    placeholder="New password"
-                                    passwordrules={passwordRules}
-                                />
-
-                                <InputError message={errors.password} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    Confirm password
-                                </Label>
-
-                                <PasswordInput
-                                    id="password_confirmation"
-                                    name="password_confirmation"
-                                    className="mt-1 block w-full"
-                                    autoComplete="new-password"
-                                    placeholder="Confirm password"
-                                    passwordrules={passwordRules}
-                                />
-
-                                <InputError
-                                    message={errors.password_confirmation}
-                                />
-                            </div>
-
-                            <div className="flex items-center gap-4">
+                            <SettingsCardFooter>
                                 <Button
                                     disabled={processing}
+                                    className="w-full sm:w-auto"
                                     data-test="update-password-button"
                                 >
-                                    Save
+                                    {processing && <Spinner />}
+                                    Update password
                                 </Button>
-                            </div>
+                            </SettingsCardFooter>
                         </>
                     )}
                 </Form>
-            </div>
+            </SettingsCard>
+
+            <ResetByEmail />
         </>
+    );
+}
+
+function ResetByEmail() {
+    const { email } = useUser();
+    const [sending, setSending] = useState(false);
+
+    const send = async () => {
+        setSending(true);
+
+        try {
+            const data = await api<MessageResponse>(
+                '/settings/password/reset-link',
+                { method: 'POST' },
+            );
+            if (data.warning) toast.warning(data.message);
+            else toast.success(data.message);
+        } catch (error) {
+            toast.error(
+                error instanceof ApiError
+                    ? error.message
+                    : 'Something went wrong. Please try again.',
+            );
+        } finally {
+            setSending(false);
+        }
+    };
+
+    return (
+        <SettingsCard
+            title="Forgot your password?"
+            description={
+                <>
+                    We'll email a link to{' '}
+                    <span className="font-medium break-all text-foreground">
+                        {email}
+                    </span>
+                    . It works for 60 minutes, and using it signs you out
+                    everywhere.
+                </>
+            }
+            action={
+                <Button
+                    type="button"
+                    variant="outline"
+                    disabled={sending}
+                    onClick={() => void send()}
+                    className="w-full shrink-0 @xl:w-auto"
+                >
+                    {sending && <Spinner />}
+                    Email me a reset link
+                </Button>
+            }
+        />
     );
 }

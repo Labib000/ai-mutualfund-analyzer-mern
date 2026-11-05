@@ -97,10 +97,12 @@ export default function HoldingsTable({
     );
 
     return (
-        <>
+        // Cards or table by the width available here, not the viewport: the
+        // open sidebar leaves the table too little room on a 1024px screen.
+        <div className="@container">
             <ul
                 className={cn(
-                    'divide-y overflow-hidden lg:hidden',
+                    'divide-y overflow-hidden @4xl:hidden',
                     embedded ? 'border-t' : 'rounded-xl border bg-card',
                 )}
             >
@@ -113,7 +115,7 @@ export default function HoldingsTable({
                 ))}
             </ul>
 
-            <div className="hidden overflow-x-auto rounded-xl border bg-card lg:block">
+            <div className="hidden overflow-x-auto rounded-xl border bg-card @4xl:block">
                 <table className="w-full text-sm">
                     <thead className="bg-muted/50 text-left text-muted-foreground">
                         <tr>
@@ -122,7 +124,7 @@ export default function HoldingsTable({
                                 header(
                                     'invested',
                                     'Invested',
-                                    'hidden text-right xl:table-cell',
+                                    'hidden text-right @6xl:table-cell',
                                 )}
                             {header('value', 'Current value', 'text-right')}
                             {weights &&
@@ -150,7 +152,7 @@ export default function HoldingsTable({
                             <tr>
                                 <td className="px-4 py-3">Total</td>
                                 {!compact && (
-                                    <td className="hidden px-4 py-3 text-right whitespace-nowrap tabular-nums xl:table-cell">
+                                    <td className="hidden px-4 py-3 text-right whitespace-nowrap tabular-nums @6xl:table-cell">
                                         {formatPaise(totals.investedPaise)}
                                     </td>
                                 )}
@@ -185,7 +187,7 @@ export default function HoldingsTable({
                     )}
                 </table>
             </div>
-        </>
+        </div>
     );
 }
 
@@ -253,14 +255,14 @@ function HoldingCard({
                         className="mt-1 size-3 shrink-0 text-muted-foreground"
                     />
                 </div>
-                <div className="flex items-end justify-between gap-3 pl-12">
-                    <div className="min-w-0">
+                <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1 pl-12">
+                    <div>
                         <p className="text-xs text-muted-foreground">Value</p>
                         <p className="font-semibold whitespace-nowrap tabular-nums">
                             {formatPaise(performance.valuePaise)}
                         </p>
                     </div>
-                    <div className="text-right">
+                    <div className="ml-auto text-right">
                         <Gain
                             paise={performance.unrealisedGainPaise}
                             pct={performance.absoluteReturnPct}
@@ -331,7 +333,7 @@ function HoldingRow({
                 </div>
             </td>
             {!compact && (
-                <Cell className="hidden xl:table-cell">
+                <Cell className="hidden @6xl:table-cell">
                     {formatPaise(performance.investedPaise)}
                 </Cell>
             )}

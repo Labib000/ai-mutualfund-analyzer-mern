@@ -34,7 +34,7 @@ export default function AiSummaryCard() {
             : null;
 
     return (
-        <Card className="gap-0 overflow-hidden">
+        <Card className="gap-0 overflow-hidden sm:gap-0">
             <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 space-y-1">
                     <CardTitle>AI summary</CardTitle>

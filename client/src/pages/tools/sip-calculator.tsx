@@ -273,7 +273,7 @@ export default function SipCalculator() {
                     </Card>
 
                     {/* Results */}
-                    <div className="space-y-4 sm:space-y-6 lg:col-span-7">
+                    <div className="@container space-y-4 sm:space-y-6 lg:col-span-7">
                         <div
                             ref={hero}
                             className="rounded-xl border bg-gradient-to-b from-primary/10 to-card p-5 sm:p-7"
@@ -367,7 +367,7 @@ export default function SipCalculator() {
                             </dl>
                         </div>
 
-                        <div className="grid gap-4 sm:gap-6 xl:grid-cols-2">
+                        <div className="grid gap-4 sm:gap-6 @2xl:grid-cols-2">
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Where it comes from</CardTitle>
