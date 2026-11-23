@@ -16,7 +16,12 @@
  */
 import { CacheEntry } from '../models/cacheEntry.js';
 import { metrics } from './metrics.js';
-import { getRedis, redisFallback, timedRedis } from './redis.js';
+import {
+    forgetRedisPrefix,
+    getRedis,
+    redisFallback,
+    timedRedis,
+} from './redis.js';
 
 export type CacheBackend = 'redis' | 'mongo';
 
@@ -72,11 +77,6 @@ export const mongoCacheStore: CacheStore = {
     },
 };
 
-/** Glob-escapes text for SCAN MATCH. */
-const escapeGlob = (text: string) => text.replace(/[*?[\]\\]/g, '\\$&');
-
-const SCAN_BATCH = 500;
-
 /**
  * Values as JSON strings under `<namespace><key>`, expiring through Redis
  * (SET ... PX). Every call is timed in the metrics as cache.<op>.
@@ -115,27 +115,11 @@ export class RedisCacheStore implements CacheStore {
         );
     }
 
-    /** SCAN (never KEYS, which blocks Redis) then UNLINK, in batches. */
+    /** SCAN then UNLINK (see forgetRedisPrefix). */
     async forgetPrefix(prefix: string) {
-        return timedRedis('cache.forgetPrefix', async (redis) => {
-            const match = `${escapeGlob(this.namespace + prefix)}*`;
-            let cursor = '0';
-            let deleted = 0;
-
-            do {
-                const [next, keys] = await redis.scan(
-                    cursor,
-                    'MATCH',
-                    match,
-                    'COUNT',
-                    SCAN_BATCH,
-                );
-                cursor = next;
-                if (keys.length > 0) deleted += await redis.unlink(...keys);
-            } while (cursor !== '0');
-
-            return deleted;
-        });
+        return timedRedis('cache.forgetPrefix', (redis) =>
+            forgetRedisPrefix(redis, this.namespace + prefix),
+        );
     }
 }
 

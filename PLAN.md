@@ -241,6 +241,8 @@ An optional Redis layer behind the existing Mongo-backed seams. See Revision 11 
 - **R2, cache:** a `CacheStore` interface with Mongo and Redis versions behind `cacheGet`/`cachePut`. Callers don't change, and Mongo takes over if Redis errors.
   - *Done (2026-11-23):* Redis is the only store while it works (no double write); each failed call falls back to Mongo and counts in `hisaab_redis_fallback_total{store="cache"}`. `cacheForget`/`cacheForgetPrefix` (SCAN + UNLINK) clear both stores and throw if Redis is configured but down, so account deletion fails with a 500 and can be retried rather than leaving figures in Redis. `deleteUserData` and `db:seed:load` go through them. Cache metrics have a `backend` label. Contract suite in `test/lib/cacheStore.test.ts`. First look: `mixed` at 10 req/s, p95 4.2 s → 1.2 s.
 - **R3, rate limits:** `RedisRateLimitStore` (`INCR` + `PEXPIRE` in one `MULTI`), with the same fixed window as `MongoRateLimitStore`.
+  - *Done (2026-11-23):* keys `hisaab:rl:<name>:<key>`. `increment` is `MULTI` `INCR` + `PEXPIRE … NX` (only the first hit sets the expiry, so the window stays fixed) + `PTTL`, repairing a key that has no TTL. `decrement` is a Lua script that only decrements an existing counter above 0, so it never creates a key without a TTL. `FallbackRateLimitStore` (via `rateLimitStore(name)`, used by all 4 limiter builders) picks Redis per call and falls back to Mongo on any error: it **fails open**, so limits are briefly looser during an outage but nobody is locked out. Contract suite in `test/lib/rateLimitStore.test.ts`. Login at 5/s: Atlas operations per login 6 → 4, login p50 303 → 274 ms, Redis p95 about 3 ms.
+  - *Deploy check (R6/Phase 6):* `PEXPIRE … NX` needs Redis 7; confirm the hosted Redis (Upstash) supports it.
 - **R4, job lock:** `SET NX PX` to take the lock; a Lua compare-and-delete to release it.
 - **R5, sessions:** decide whether to move them, and write up the trade-off either way.
 - **R6, measure:** before and after timings for the dashboard and compare, plus a scaling section in the README.
@@ -296,4 +298,5 @@ hPanel cron may run on server time, so convert the times if it does.
 1. **Hostinger build:** does the Node.js Web App run an npm workspaces build, and what is its request timeout? A NAV import has to finish within one request. Check this at the start of Phase 6 with a hello-world deploy (deferred from Phase 0).
 2. ~~Data migration~~: start fresh. Nothing is migrated from the Laravel MariaDB.
 3. ~~Lint tooling~~: kept `vite-plus` (1.x works across the workspaces).
+4. **Hosting may move to AWS** (free plan) instead of Hostinger; decide at Phase 6. If so, revisit the no-worker and HTTP-cron constraints, and the hosted Redis choice (Upstash vs ElastiCache). Until then, the Hostinger constraints stay in force.
 4. ~~2FA and passkeys~~: deferred to Phase 6.

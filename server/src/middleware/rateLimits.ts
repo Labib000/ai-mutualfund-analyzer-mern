@@ -1,7 +1,7 @@
 import type { Request, RequestHandler } from 'express';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 
-import { MongoRateLimitStore } from '../lib/rateLimitStore.js';
+import { rateLimitStore } from '../lib/rateLimitStore.js';
 
 const ip = (req: Request) => ipKeyGenerator(req.ip ?? 'unknown');
 
@@ -37,7 +37,7 @@ export function loginLimiter(): RequestHandler {
     return rateLimit({
         ...common,
         limit: 5,
-        store: new MongoRateLimitStore('login'),
+        store: rateLimitStore('login'),
         skipSuccessfulRequests: true,
         keyGenerator: (req) =>
             `${String(req.body?.email ?? '')
@@ -55,7 +55,7 @@ export function perUserLimiter(name: string, limit: number): RequestHandler {
     return rateLimit({
         ...common,
         limit,
-        store: new MongoRateLimitStore(name),
+        store: rateLimitStore(name),
         keyGenerator: (req) =>
             req.user ? `user:${req.user.id}` : `ip:${ip(req)}`,
         handler: tooMany(
@@ -69,7 +69,7 @@ export function aiLimiter(): RequestHandler {
     return rateLimit({
         ...common,
         limit: 5,
-        store: new MongoRateLimitStore('ai'),
+        store: rateLimitStore('ai'),
         keyGenerator: (req) =>
             req.user ? `user:${req.user.id}` : `ip:${ip(req)}`,
         handler: tooMany(
@@ -83,7 +83,7 @@ export function perIpLimiter(name: string, limit: number): RequestHandler {
     return rateLimit({
         ...common,
         limit,
-        store: new MongoRateLimitStore(name),
+        store: rateLimitStore(name),
         keyGenerator: (req) => ip(req),
         handler: tooMany(
             (s) => `Too many attempts. Please try again in ${s} seconds.`,

@@ -8,9 +8,6 @@ import {
     passwordRulesString,
 } from '../../src/auth/password.js';
 import { UrlSigner } from '../../src/auth/signedUrl.js';
-import { MongoRateLimitStore } from '../../src/lib/rateLimitStore.js';
-import { RateLimit } from '../../src/models/rateLimit.js';
-import { useTestDb } from '../support/db.js';
 
 describe('checkPasswordStrength', () => {
     const lax = { strict: false, pwned: async () => false };
@@ -154,68 +151,5 @@ describe('UrlSigner', () => {
             'invalid',
         );
         expect(signer.verify(url, at)).toBe('invalid');
-    });
-});
-
-describe('MongoRateLimitStore', () => {
-    useTestDb();
-
-    const store = () => {
-        const s = new MongoRateLimitStore('test');
-        s.init({ windowMs: 60_000 } as never);
-        return s;
-    };
-
-    it('counts hits in a window', async () => {
-        const s = store();
-
-        expect((await s.increment('k')).totalHits).toBe(1);
-        expect((await s.increment('k')).totalHits).toBe(2);
-        const third = await s.increment('k');
-
-        expect(third.totalHits).toBe(3);
-        expect(third.resetTime!.getTime()).toBeGreaterThan(Date.now() + 50_000);
-        expect((await s.get('k'))!.totalHits).toBe(3);
-    });
-
-    it('starts a new window after the old one ends', async () => {
-        const s = store();
-        await s.increment('k2');
-        await s.increment('k2');
-
-        await RateLimit.updateOne(
-            { key: 'test:k2' },
-            { resetAt: new Date(Date.now() - 1) },
-        );
-
-        expect(await s.get('k2')).toBeUndefined();
-        expect((await s.increment('k2')).totalHits).toBe(1);
-    });
-
-    it('is atomic under concurrent hits', async () => {
-        const s = store();
-
-        await Promise.all(
-            Array.from({ length: 20 }, () => s.increment('race')),
-        );
-
-        expect((await s.get('race'))!.totalHits).toBe(20);
-    });
-
-    it('decrements and resets keys, separately per prefix', async () => {
-        const s = store();
-        const other = new MongoRateLimitStore('other');
-        other.init({ windowMs: 60_000 } as never);
-
-        await s.increment('k3');
-        await s.increment('k3');
-        await other.increment('k3');
-
-        await s.decrement('k3');
-        expect((await s.get('k3'))!.totalHits).toBe(1);
-
-        await s.resetKey('k3');
-        expect(await s.get('k3')).toBeUndefined();
-        expect((await other.get('k3'))!.totalHits).toBe(1);
     });
 });

@@ -3,9 +3,12 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll } from 'vitest';
 
 import { RedisCacheStore, setCacheNamespace } from '../../src/lib/cache.js';
+import { setRateLimitNamespace } from '../../src/lib/rateLimitStore.js';
 import {
     connectRedis,
     disconnectRedis,
+    forgetRedisPrefix,
+    getRedis,
     waitForRedis,
 } from '../../src/lib/redis.js';
 
@@ -20,12 +23,16 @@ export const testNamespace = (store: string) =>
     `hisaab-test-${randomUUID().slice(0, 8)}:${store}:`;
 
 /**
- * Connects to the real Redis for this test file, with the cache under its own
- * namespace, and deletes that namespace afterwards. Call inside a
+ * Connects to the real Redis for this test file, with the cache and rate limits
+ * under their own namespaces, and deletes them afterwards. Call inside a
  * describe.skipIf(!REDIS_URL)(...).
  */
-export function useTestRedis(): { cacheNamespace: string } {
+export function useTestRedis(): {
+    cacheNamespace: string;
+    rateLimitNamespace: string;
+} {
     const cacheNamespace = testNamespace('cache');
+    const rateLimitNamespace = testNamespace('rl');
 
     beforeAll(async () => {
         connectRedis(REDIS_URL!);
@@ -33,13 +40,16 @@ export function useTestRedis(): { cacheNamespace: string } {
             throw new Error(`Redis at REDIS_URL is not answering`);
         }
         setCacheNamespace(cacheNamespace);
+        setRateLimitNamespace(rateLimitNamespace);
     });
 
     afterAll(async () => {
         await new RedisCacheStore(cacheNamespace).forgetPrefix('');
+        await forgetRedisPrefix(getRedis()!, rateLimitNamespace);
         setCacheNamespace('hisaab:cache:');
+        setRateLimitNamespace('hisaab:rl:');
         await disconnectRedis();
     });
 
-    return { cacheNamespace };
+    return { cacheNamespace, rateLimitNamespace };
 }

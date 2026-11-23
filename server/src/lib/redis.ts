@@ -123,6 +123,38 @@ export async function timedRedis<T>(
     }
 }
 
+/** Glob-escapes text for SCAN MATCH, so `*`, `?` and `[` match literally. */
+const escapeGlob = (text: string) => text.replace(/[*?[\]\\]/g, '\\$&');
+
+const SCAN_BATCH = 500;
+
+/**
+ * Deletes every key starting with `prefix`: SCAN (never KEYS, which blocks
+ * Redis while it walks every key) then UNLINK, in batches. Returns how many.
+ */
+export async function forgetRedisPrefix(
+    redis: Redis,
+    prefix: string,
+): Promise<number> {
+    const match = `${escapeGlob(prefix)}*`;
+    let cursor = '0';
+    let deleted = 0;
+
+    do {
+        const [next, keys] = await redis.scan(
+            cursor,
+            'MATCH',
+            match,
+            'COUNT',
+            SCAN_BATCH,
+        );
+        cursor = next;
+        if (keys.length > 0) deleted += await redis.unlink(...keys);
+    } while (cursor !== '0');
+
+    return deleted;
+}
+
 /** When each store last logged a fallback, to log at most once a minute. */
 const fallbackLoggedAt = new Map<string, number>();
 
