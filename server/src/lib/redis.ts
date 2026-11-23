@@ -155,8 +155,25 @@ export async function forgetRedisPrefix(
     return deleted;
 }
 
-/** When each store last logged a fallback, to log at most once a minute. */
-const fallbackLoggedAt = new Map<string, number>();
+/** When each store last logged a warning, to log at most once a minute. */
+const warnedAt = new Map<string, number>();
+
+/** Logs a Redis failure for `store`, at most once a minute per store. */
+export function warnRedis(
+    store: string,
+    message: string,
+    error: unknown,
+): void {
+    const now = Date.now();
+    if (now - (warnedAt.get(store) ?? 0) < ERROR_LOG_INTERVAL_MS) return;
+
+    warnedAt.set(store, now);
+    const err = error as (Error & { code?: string }) | undefined;
+    log?.warn(
+        { store, err: err?.message || err?.code || String(error) },
+        message,
+    );
+}
 
 /**
  * A store is about to use Mongo for one call because Redis failed: count it
@@ -164,16 +181,7 @@ const fallbackLoggedAt = new Map<string, number>();
  */
 export function redisFallback(store: string, error: unknown): void {
     metrics.recordRedisFallback(store);
-
-    const now = Date.now();
-    if (now - (fallbackLoggedAt.get(store) ?? 0) >= ERROR_LOG_INTERVAL_MS) {
-        fallbackLoggedAt.set(store, now);
-        const err = error as (Error & { code?: string }) | undefined;
-        log?.warn(
-            { store, err: err?.message || err?.code || String(error) },
-            'Redis failed; using Mongo',
-        );
-    }
+    warnRedis(store, 'Redis failed; using Mongo', error);
 }
 
 /**
@@ -196,6 +204,26 @@ export async function waitForRedis(timeoutMs = 5_000): Promise<boolean> {
         };
         redis.once('ready', onReady);
     });
+}
+
+/**
+ * For CLI scripts: connects when `url` is set and waits until Redis answers,
+ * so a CLI uses the same stores (and job locks) as the server. Returns false,
+ * after printing why, when Redis is configured but not answering.
+ */
+export async function connectRedisForCli(
+    url: string | undefined,
+): Promise<boolean> {
+    if (!url) return true;
+
+    connectRedis(url);
+    if (await waitForRedis()) return true;
+
+    console.error(
+        'REDIS_URL is set but Redis is not answering. Start it (npm run redis:up) or unset REDIS_URL.',
+    );
+    await disconnectRedis();
+    return false;
 }
 
 /** "up" when Redis answers PING, "down" when it doesn't, "disabled" when not configured. */

@@ -9,7 +9,8 @@ import { ConfigError, loadConfig } from '../config.js';
 import { connectDb, disconnectDb } from '../db.js';
 import { AmfiDownloadError, runNavImport } from '../jobs/navImport.js';
 import { formatShort } from '../lib/dates.js';
-import { JobLockedError } from '../lib/jobLock.js';
+import { JobLockUnavailableError, JobLockedError } from '../lib/jobLock.js';
+import { connectRedisForCli, disconnectRedis } from '../lib/redis.js';
 import { AmfiNavFileError } from '../nav/amfiNavFileParser.js';
 
 async function main(): Promise<number> {
@@ -27,6 +28,12 @@ async function main(): Promise<number> {
     }
 
     await connectDb(config.MONGODB_URI);
+    // The job lock lives in Redis when it's configured: use the same one as
+    // the server, or a CLI run could overlap a cron run.
+    if (!(await connectRedisForCli(config.REDIS_URL))) {
+        await disconnectDb();
+        return 1;
+    }
 
     try {
         const result = await runNavImport({ config, file: values.file });
@@ -48,7 +55,8 @@ async function main(): Promise<number> {
     } catch (error) {
         if (
             error instanceof AmfiDownloadError ||
-            error instanceof JobLockedError
+            error instanceof JobLockedError ||
+            error instanceof JobLockUnavailableError
         ) {
             console.error(error.message);
             return 1;
@@ -61,6 +69,7 @@ async function main(): Promise<number> {
         }
         throw error;
     } finally {
+        await disconnectRedis();
         await disconnectDb();
     }
 }

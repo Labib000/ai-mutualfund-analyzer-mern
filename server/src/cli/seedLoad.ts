@@ -26,7 +26,7 @@ import { addDays, addMonthsNoOverflow, isWeekday } from '../lib/dates.js';
 import { cacheForgetPrefix } from '../lib/cache.js';
 import { Decimal } from '../lib/decimal.js';
 import { REPO_ROOT } from '../lib/paths.js';
-import { connectRedis, disconnectRedis, waitForRedis } from '../lib/redis.js';
+import { connectRedisForCli, disconnectRedis } from '../lib/redis.js';
 import { now, today } from '../lib/today.js';
 import { AiUsage } from '../models/aiUsage.js';
 import { Avatar } from '../models/avatar.js';
@@ -359,16 +359,11 @@ async function main(): Promise<void> {
     console.log(`Database "${connection.connection.name}"`);
 
     // The cache may also live in Redis (R2): clear it there too.
+    if (!(await connectRedisForCli(config.REDIS_URL))) {
+        await disconnectDb();
+        process.exit(1);
+    }
     if (config.REDIS_URL) {
-        connectRedis(config.REDIS_URL);
-        if (!(await waitForRedis())) {
-            console.error(
-                'REDIS_URL is set but Redis is not answering. Start it (npm run redis:up) or unset REDIS_URL.',
-            );
-            await disconnectRedis();
-            await disconnectDb();
-            process.exit(1);
-        }
         console.log('Redis connected: its cache is cleared too.');
     }
 

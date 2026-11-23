@@ -6,7 +6,7 @@
 import { Router } from 'express';
 
 import type { Config } from '../config.js';
-import { JobLockedError } from '../lib/jobLock.js';
+import { JobLockUnavailableError, JobLockedError } from '../lib/jobLock.js';
 import type { Logger } from '../lib/logger.js';
 import { metrics } from '../lib/metrics.js';
 import { AmfiDownloadError, runNavImport } from '../jobs/navImport.js';
@@ -51,6 +51,11 @@ export function internalJobsRouter(ctx: InternalJobsContext): Router {
                 res.status(409).json({ message: error.message });
                 return;
             }
+            if (error instanceof JobLockUnavailableError) {
+                ctx.logger.warn({ job: error.key }, error.message);
+                res.status(503).json({ message: error.message });
+                return;
+            }
 
             if (
                 error instanceof AmfiDownloadError ||
@@ -88,6 +93,11 @@ export function internalJobsRouter(ctx: InternalJobsContext): Router {
         } catch (error) {
             if (error instanceof JobLockedError) {
                 res.status(409).json({ message: error.message });
+                return;
+            }
+            if (error instanceof JobLockUnavailableError) {
+                ctx.logger.warn({ job: error.key }, error.message);
+                res.status(503).json({ message: error.message });
                 return;
             }
             throw error;

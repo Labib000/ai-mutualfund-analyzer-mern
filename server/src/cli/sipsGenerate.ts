@@ -5,8 +5,9 @@
 import { ConfigError, loadConfig } from '../config.js';
 import { connectDb, disconnectDb } from '../db.js';
 import { runSipsGenerate } from '../jobs/sipsGenerate.js';
-import { JobLockedError } from '../lib/jobLock.js';
+import { JobLockUnavailableError, JobLockedError } from '../lib/jobLock.js';
 import { createLogger } from '../lib/logger.js';
+import { connectRedisForCli, disconnectRedis } from '../lib/redis.js';
 import { MfApiNavProvider } from '../nav/mfApiNavProvider.js';
 import { NavLookup } from '../nav/navLookup.js';
 
@@ -32,6 +33,12 @@ async function main(): Promise<number> {
     );
 
     await connectDb(config.MONGODB_URI);
+    // The job lock lives in Redis when it's configured: use the same one as
+    // the server, or a CLI run could overlap a cron run.
+    if (!(await connectRedisForCli(config.REDIS_URL))) {
+        await disconnectDb();
+        return 1;
+    }
 
     try {
         const { created, failed } = await runSipsGenerate({ navs, logger });
@@ -44,12 +51,16 @@ async function main(): Promise<number> {
         }
         return 0;
     } catch (error) {
-        if (error instanceof JobLockedError) {
+        if (
+            error instanceof JobLockedError ||
+            error instanceof JobLockUnavailableError
+        ) {
             console.error(error.message);
             return 1;
         }
         throw error;
     } finally {
+        await disconnectRedis();
         await disconnectDb();
     }
 }
