@@ -16,13 +16,15 @@
 
 It's a MERN (MongoDB, Express, React, Node) rebuild of an earlier Laravel app, written in TypeScript end to end.
 
-> **Status:** the tracker, insights and AI features are done. Fund document answers (RAG) are in progress. See the [roadmap](#roadmap).
+> **Status:** the tracker, insights and AI features are done, and so are monitoring and load testing. An optional Redis layer (Phase 4.4) is in progress. Fund document answers (RAG) are on hold until it's finished. See the [roadmap](#roadmap).
 
 ## Contents
 
 - [Why Hisaab](#why-hisaab)
 - [Features](#features)
 - [How it works](#how-it-works)
+- [Scaling and monitoring](#scaling-and-monitoring)
+- [Redis (in progress)](#redis-in-progress)
 - [Tech stack](#tech-stack)
 - [Getting started](#getting-started)
 - [Scripts](#scripts)
@@ -36,7 +38,8 @@ It's a MERN (MongoDB, Express, React, Node) rebuild of an earlier Laravel app, w
 - **The numbers are exact.** Money is stored as integer paise, and NAVs and units as fixed-precision decimals, so there's no floating-point drift.
 - **The AI only explains.** It works from figures the app has already calculated, never recommends buying or selling, and always shows a disclaimer.
 - **It covers the whole market.** Daily NAVs for about 14,000 schemes come straight from AMFI.
-- **It runs on simple hosting.** There are no background workers, Redis or in-process schedulers, so one Node app is enough.
+- **It runs on simple hosting.** There are no background workers or in-process schedulers, so one Node app is enough. Redis is planned as an optional extra: without it, everything runs on MongoDB.
+- **It's measured.** Every request's latency, database queries and cache use are tracked, and a load-testing setup with live Grafana dashboards shows how the app behaves under traffic.
 
 ## Features
 
@@ -85,10 +88,11 @@ Register, email verification, password reset, profile and appearance settings (l
                          Browser (React)
                                |
                                v
-       Node app: Express API + the built React client
-          |                |                     |
-          v                v                     v
-    MongoDB Atlas      Groq API      AMFI and mfapi.in (NAV data)
+       Node app: Express API + the built React client  <---- scraped ----  Prometheus -> Grafana
+          |                |                |                     |         (local, for load tests)
+          v                v                v                     v
+    MongoDB Atlas      Redis          Groq API      AMFI and mfapi.in (NAV data)
+                   (planned, optional)
 ```
 
 The client and API share one origin, so there's one app to deploy.
@@ -102,8 +106,10 @@ The client and API share one origin, so there's one app to deploy.
 | Mongo transactions for redemptions, deletes and SIP generation | Concurrent writes can't oversell a holding |
 | Scheduled work through HTTP endpoints | The app can restart or idle without losing jobs |
 | XIRR using Newton-Raphson with a bisection fallback | Follows Excel's convention, and still finds an answer when Newton's method fails |
+| Metrics kept in the app with `prom-client`, read by Prometheus | Works on shared hosting: no agent to install, just one endpoint behind a secret |
+| Redis behind the existing cache, rate-limit and lock code, with a MongoDB fallback (planned) | Faster when Redis is there, and the app still works when it isn't |
 
-### Fund document answers (in progress)
+### Fund document answers (on hold)
 
 Some questions can't be calculated, such as a fund's exit load or objective. These answers live in fund documents, so this work adds citation-backed RAG to the Ask page:
 
@@ -116,7 +122,106 @@ Question -> router -> portfolio figures (exact, unchanged)
 
 Personal figures will always come from the app's calculations, never from retrieved text.
 
-**Done so far:** the document list and its validation, PDF text extraction, and the database models. Search and answers aren't built yet, so the Ask page doesn't use documents today.
+**Done so far:** the document list and its validation, PDF text extraction, and the database models. Search and answers aren't built yet, so the Ask page doesn't use documents today. This work resumes after the Redis phase.
+
+## Scaling and monitoring
+
+Before changing anything for speed, Hisaab measures itself. The app records what every request costs, a load tester sends realistic traffic, and Grafana shows both live.
+
+### What's measured
+
+| Metric | Why it matters |
+|---|---|
+| Latency p50 / p95 / p99 per route | Averages hide slow requests; the tail is what users feel |
+| Requests a second and error rate | How much one instance can take before it breaks |
+| MongoDB queries and time per request | Finds N+1 patterns: a query count that grows with the data |
+| Slowest MongoDB commands | Shows what to index or cache first |
+| Cache hit ratio, per cache | Shows whether each cache is doing anything |
+| Event-loop lag | Node-specific: CPU-heavy work (password hashing, XIRR, fund stats) blocks every request |
+| CPU, memory, garbage collection | Leaks and limits |
+| Job durations | How NAV import and SIP generation scale with ~14,000 schemes |
+
+### How it works
+
+- **In the app** (`server/src/lib/metrics.ts`): each request, database command, cache lookup and job is recorded twice:
+  - as JSON at `/internal/metrics`, which can be reset before each test run;
+  - in Prometheus format at `/internal/metrics/prometheus`, using `prom-client`, along with Node's built-in process metrics.
+- **Database queries are counted per request** using `AsyncLocalStorage` and the MongoDB driver's command events, so the numbers are exact without any changes to the queries.
+- Both endpoints are protected by `CRON_SECRET`.
+
+### Load testing
+
+[k6](https://k6.io) runs in Docker, so nothing is installed in the project. `npm run db:seed:load` creates the test data: 50 users with 10 funds and 3 years of transactions each, on synthetic funds with 6 years of NAVs, so no external APIs are called.
+
+| Scenario | What it shows |
+|---|---|
+| `health` | The baseline: the framework plus one database ping |
+| `login` | Password hashing (argon2) is CPU-bound; watch event-loop lag |
+| `dashboard` | The heaviest common page, with a cold and a warm cache |
+| `holdings` | The portfolio list and a fund page |
+| `compare` | Three funds' full NAV history and ratios |
+| `mixed` | A realistic mix, raised step by step to find one instance's limit |
+
+The scenarios use an **open model** (k6's `constant-arrival-rate`). Requests keep arriving at the set rate even when the server slows down, so slowness shows up as latency instead of quietly reducing the load.
+
+### Live dashboard
+
+`npm run grafana:up` starts Prometheus and Grafana in Docker. Open **http://localhost:3001** for the ready-made *Hisaab load test* dashboard, which refreshes every 5 seconds:
+
+- **overview:** requests a second, p95, 5xx rate, event-loop lag;
+- **k6:** what the client sees;
+- **routes:** latency and traffic per route;
+- **MongoDB:** queries per request and the slowest commands;
+- **cache:** hit ratio per cache;
+- **Node process:** event-loop lag, CPU, memory, GC.
+
+### Try it
+
+Point `MONGODB_URI` at a separate database (e.g. `/hisaab_load`) and set `CRON_SECRET`. Stop `npm run dev` first, because the load server also uses port 3000.
+
+```bash
+npm run grafana:up            # Prometheus :9090 + Grafana :3001
+npm run db:seed:load          # test users, funds and transactions
+npm run load:server           # terminal 1: the built server
+npm run load -- mixed         # terminal 2: watch http://localhost:3001
+```
+
+Each run also saves k6's summary and the server's metrics to `server/load/results/`. All the options are in [`server/load/README.md`](server/load/README.md).
+
+### Results
+
+The MongoDB-only baseline is recorded first, against Atlas, so the Redis work has a fair "before". **Baseline pending.**
+
+| Scenario | Store | Rate (req/s) | p50 | p95 | p99 | Errors | Cache hit ratio |
+|---|---|---|---|---|---|---|---|
+| dashboard (cold cache) | MongoDB | | | | | | |
+| dashboard (warm cache) | MongoDB | | | | | | |
+| mixed | MongoDB | | | | | | |
+| mixed | Redis | | | | | | |
+
+## Redis (in progress)
+
+Today the cache, the rate limits and the job locks are all MongoDB round trips. Redis keeps them in memory, so each one becomes a fast local-network call. This phase is also a deliberate learning exercise, so each step starts with studying the concept.
+
+**Design:**
+
+- **Optional.** With `REDIS_URL` unset, everything stays on MongoDB as it is now, so shared hosting still works.
+- **Behind the existing code.** Redis slots in behind the cache, rate-limit store and job lock (`cache.ts`, `rateLimitStore.ts`, `jobLock.ts`), so nothing that calls them changes.
+- **Falls back.** If Redis errors, MongoDB takes over, and the app keeps working with Redis stopped.
+- **Our own stores**, not ready-made packages (`rate-limit-redis`, `connect-redis`), so each Redis pattern is written and understood.
+- **Docker** (`redis:7-alpine`) for development and tests, and a hosted Redis (Upstash, Mumbai) in production, through `ioredis`.
+
+| Step | What | Status |
+|---|---|---|
+| R0 | Study: Docker basics, Redis data types, cache-aside | In progress |
+| R1 | Connection: optional `REDIS_URL`, a health check, Docker Compose | Planned |
+| R2 | Cache: a `CacheStore` interface with MongoDB and Redis versions | Planned |
+| R3 | Rate limits: `INCR` + `PEXPIRE` in one `MULTI`, same fixed window | Planned |
+| R4 | Job lock: `SET NX PX` to take it, a Lua compare-and-delete to release it | Planned |
+| R5 | Sessions: decide whether to move them, and write up why | Planned |
+| R6 | Measure: before and after, with the tooling above | Tooling done, results pending |
+
+The same tests run against both the MongoDB and Redis versions of each store. The Redis cases are skipped when Redis isn't available.
 
 ## Tech stack
 
@@ -124,9 +229,10 @@ Personal figures will always come from the app's calculations, never from retrie
 |---|---|
 | Client | React, React Router, TanStack Query, Tailwind CSS, shadcn/ui (Radix), Recharts, Motion, Font Awesome |
 | Server | Node.js 24, Express 5, Mongoose, Zod, decimal.js, argon2, pino, express-session with connect-mongo |
-| Database | MongoDB (Atlas) |
+| Database | MongoDB (Atlas); Redis planned as an optional cache |
 | AI | Groq, with Gemini embeddings for the RAG work |
 | Shared | `@hisaab/shared`: types, money and date helpers used by both sides |
+| Monitoring | prom-client, Prometheus, Grafana, k6, Docker Compose |
 | Tooling | TypeScript, Vite, Vitest, Supertest, mongodb-memory-server, Vite+ (lint and format), GitHub Actions |
 
 ### Project layout
@@ -137,6 +243,7 @@ Personal figures will always come from the app's calculations, never from retrie
 ├── server/
 │   ├── src/        Express API, jobs and CLI scripts
 │   ├── rag/        Fund document manifest and test questions
+│   ├── load/       k6 scenarios, Prometheus and Grafana setup
 │   └── test/       API, maths and job tests
 ├── shared/         Types and helpers shared by client and server
 └── PLAN.md         Project plan, decisions and phases
@@ -166,10 +273,11 @@ Fill in `.env`:
 |---|---|
 | `MONGODB_URI` | Your MongoDB connection string, with the database name (e.g. `/hisaab`) |
 | `SESSION_SECRET` | At least 32 random characters. Generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
-| `CRON_SECRET` | Optional. Enables the `/internal/jobs/*` endpoints for scheduled jobs |
+| `CRON_SECRET` | Optional. Enables the `/internal/jobs/*` endpoints for scheduled jobs and the `/internal/metrics` endpoints |
 | `MAIL_*` | Optional locally: without SMTP details, emails are written to `logs/mail.log` |
 | `AI_API_KEY` | Optional. A free [Groq API key](https://console.groq.com/keys) for the AI features; without one they say the AI is unavailable. The other `AI_*` settings have working defaults (see `.env.example`) |
 | `GEMINI_API_KEY` | Optional, and not used yet. A [Gemini API key](https://aistudio.google.com/apikey) for the RAG work |
+| `REDIS_URL` | Planned, not used yet. Will turn on the optional Redis layer |
 | `COMPARE_RISK_FREE_RATE` | Optional. The yearly risk-free rate (%) for Sharpe and Sortino on the compare page; defaults to 6.5 |
 
 ### Load fund data and a demo user
@@ -200,6 +308,10 @@ This starts the API on http://localhost:3000 and the app on **http://localhost:5
 | `npm run db:seed` | Create or reset the demo user (development only) |
 | `npm run job:nav-import` | Import the latest AMFI NAVs. `-- --file=NAVAll.txt` imports from a local file |
 | `npm run job:sips-generate` | Record due SIP installments |
+| `npm run db:seed:load` | Create load-test users, funds and transactions. `-- --reset` removes them, `-- --clear-cache` empties the cache |
+| `npm run load:server` | Build and start the server for load testing (quieter logs) |
+| `npm run load -- <scenario>` | Run a k6 scenario in Docker and save the results |
+| `npm run grafana:up` / `grafana:down` | Start or stop Prometheus and Grafana |
 | `npm run rag:check` | Validate the fund document list and test questions |
 | `npm run rag:extract` | Extract text from the fund PDFs to `server/rag/docs/text/` for review |
 
@@ -222,7 +334,7 @@ A lock in the database stops two runs of the same job from overlapping.
 npm test
 ```
 
-Server tests run against an in-memory MongoDB replica set, so they need no setup. They cover the API, the portfolio maths and the jobs, and several check figures against the original Laravel app to make sure both give the same numbers. GitHub Actions runs lint, type checks, tests and the build on every push to `main` and every pull request.
+Server tests run against an in-memory MongoDB replica set, so they need no setup. They cover the API, the portfolio maths and the jobs, and several check figures against the original Laravel app to make sure both give the same numbers. The metrics endpoints have their own tests. Load tests are separate and run by hand (see [Scaling and monitoring](#scaling-and-monitoring)). GitHub Actions runs lint, type checks, tests and the build on every push to `main` and every pull request.
 
 ## Roadmap
 
@@ -231,7 +343,10 @@ Server tests run against an in-memory MongoDB replica set, so they need no setup
 - [x] **Phase 2:** core tracker: NAV import, holdings, transactions, SIPs, dashboard
 - [x] **Phase 3:** insights, fund facts (1/3/5-year returns, volatility, drawdown), period changes, financial-year gains
 - [x] **Phase 4:** AI: ask questions about your portfolio, summaries, fund explanations
-- [ ] **Phase 4.5:** fund document answers with citations (RAG), in progress
+- [ ] **Phase 4.4:** optional Redis layer, in progress
+  - [x] monitoring and load-testing tooling (metrics, k6, Prometheus, Grafana)
+  - [ ] Redis cache, rate limits and job lock, with before and after numbers
+- [ ] **Phase 4.5:** fund document answers with citations (RAG), on hold
 - [ ] **Phase 5:** Pro plan with Razorpay
 - [ ] **Phase 6:** 2FA and passkeys, deployment
 
