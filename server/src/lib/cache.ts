@@ -1,5 +1,6 @@
 /** get/put over the `cache` collection, like Laravel's Cache facade. */
 import { CacheEntry } from '../models/cacheEntry.js';
+import { metrics } from './metrics.js';
 
 /** The cached value, or undefined when missing or expired. */
 export async function cacheGet<T>(key: string): Promise<T | undefined> {
@@ -9,6 +10,7 @@ export async function cacheGet<T>(key: string): Promise<T | undefined> {
         key,
         expiresAt: { $gt: new Date() },
     }).lean();
+    metrics.recordCache(key, entry ? 'hit' : 'miss');
     return entry ? (entry.value as T) : undefined;
 }
 
@@ -27,4 +29,5 @@ export async function cachePut(
         },
         { upsert: true },
     );
+    metrics.recordCache(key, 'write');
 }

@@ -11,3 +11,5 @@ logs/
 RAG_STUDY_GUIDE.md
 RAG_PENDING.md
 server/rag/docs/
+server/load/data/
+server/load/results/

@@ -9,12 +9,14 @@ import { type PasswordPolicy, hibpChecker } from './auth/password.js';
 import { UrlSigner } from './auth/signedUrl.js';
 import type { Config } from './config.js';
 import type { Logger } from './lib/logger.js';
+import { metrics } from './lib/metrics.js';
 import { sessionMiddleware } from './lib/session.js';
 import { type Mailer, createMailer } from './mail/mailer.js';
 import { loadUser } from './middleware/auth.js';
 import { apiNotFound, errorHandler } from './middleware/errors.js';
 import { requireSameOrigin } from './middleware/origin.js';
 import { requestLogger } from './middleware/requestLogger.js';
+import { requestMetrics } from './middleware/requestMetrics.js';
 import { MfApiNavProvider } from './nav/mfApiNavProvider.js';
 import { NavLookup } from './nav/navLookup.js';
 import { createAiContext } from './ai/aiContext.js';
@@ -27,6 +29,7 @@ import { holdingsRouter } from './routes/holdings.js';
 import { aiRouter } from './routes/ai.js';
 import { compareRouter } from './routes/compare.js';
 import { internalJobsRouter } from './routes/internalJobs.js';
+import { metricsRouter } from './routes/metrics.js';
 import { schemesRouter } from './routes/schemes.js';
 import { settingsRouter } from './routes/settings.js';
 
@@ -91,6 +94,8 @@ export function createApp(options: AppOptions): Express {
             },
         }),
     );
+    metrics.start();
+    app.use(requestMetrics());
     app.use(requestLogger(logger));
 
     const api = express.Router();
@@ -112,6 +117,7 @@ export function createApp(options: AppOptions): Express {
     app.use('/api', api);
 
     const internal = express.Router();
+    internal.use('/metrics', metricsRouter(config));
     internal.use(
         '/jobs',
         internalJobsRouter({ config, logger, fetch: options.fetch, navs }),

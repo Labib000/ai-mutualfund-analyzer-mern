@@ -1,0 +1,14 @@
+global:
+    scrape_interval: 5s
+    evaluation_interval: 5s
+
+scrape_configs:
+    # The Hisaab server (npm run load:server or npm run dev) on this machine.
+    - job_name: hisaab
+      metrics_path: /internal/metrics/prometheus
+      authorization:
+          type: Bearer
+          credentials_file: /tmp/cron-secret
+      static_configs:
+          - targets: ['host.docker.internal:3000']
+# k6 pushes its own metrics here by remote write (see run.sh); no scrape needed.

@@ -9,6 +9,7 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "db:seed": "tsx --env-file-if-exists=../.env src/cli/seed.ts",
+        "db:seed:load": "tsx --env-file-if-exists=../.env src/cli/seedLoad.ts",
         "job:nav-import": "tsx --env-file-if-exists=../.env src/cli/navImport.ts",
         "job:sips-generate": "tsx --env-file-if-exists=../.env src/cli/sipsGenerate.ts",
         "rag:check": "tsx src/cli/ragCheck.ts",
@@ -26,6 +27,7 @@
         "mongoose": "^9.11.4",
         "nodemailer": "^10.3.1",
         "pino": "^10.4.0",
+        "prom-client": "^15.1.3",
         "zod": "^4.6.7"
     },
     "devDependencies": {

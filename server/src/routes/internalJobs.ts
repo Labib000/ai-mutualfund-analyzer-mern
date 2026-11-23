@@ -3,15 +3,15 @@
  *   curl -fsS -X POST -H "X-Cron-Secret: …" https://…/internal/jobs/nav-import
  * They sit outside /api: no session, no Origin check (cron sends none).
  */
-import { createHash, timingSafeEqual } from 'node:crypto';
-
-import { type RequestHandler, Router } from 'express';
+import { Router } from 'express';
 
 import type { Config } from '../config.js';
 import { JobLockedError } from '../lib/jobLock.js';
 import type { Logger } from '../lib/logger.js';
+import { metrics } from '../lib/metrics.js';
 import { AmfiDownloadError, runNavImport } from '../jobs/navImport.js';
 import { runSipsGenerate } from '../jobs/sipsGenerate.js';
+import { requireCronSecret } from '../middleware/cronSecret.js';
 import { perIpLimiter } from '../middleware/rateLimits.js';
 import { AmfiNavFileError } from '../nav/amfiNavFileParser.js';
 import type { NavLookup } from '../nav/navLookup.js';
@@ -23,28 +23,6 @@ export type InternalJobsContext = {
     fetch?: typeof fetch;
     navs: NavLookup;
 };
-
-const digest = (value: string) => createHash('sha256').update(value).digest();
-
-function requireCronSecret(secret: string | undefined): RequestHandler {
-    const expected = secret ? digest(secret) : null;
-
-    return (req, res, next) => {
-        if (!expected) {
-            res.status(503).json({ message: 'Cron jobs are not configured.' });
-            return;
-        }
-
-        const given = req.get('x-cron-secret') ?? '';
-
-        if (!timingSafeEqual(digest(given), expected)) {
-            res.status(401).json({ message: 'Invalid cron secret.' });
-            return;
-        }
-
-        next();
-    };
-}
 
 export function internalJobsRouter(ctx: InternalJobsContext): Router {
     const router = Router();
@@ -62,6 +40,7 @@ export function internalJobsRouter(ctx: InternalJobsContext): Router {
             });
             const ms = Date.now() - started;
 
+            metrics.recordJob('nav-import', ms, true, result);
             ctx.logger.info(
                 { job: 'nav-import', ...result, ms },
                 'job finished',
@@ -77,6 +56,7 @@ export function internalJobsRouter(ctx: InternalJobsContext): Router {
                 error instanceof AmfiDownloadError ||
                 error instanceof AmfiNavFileError
             ) {
+                metrics.recordJob('nav-import', Date.now() - started, false);
                 ctx.logger.error(
                     { job: 'nav-import', err: error.message },
                     'job failed',
@@ -99,6 +79,7 @@ export function internalJobsRouter(ctx: InternalJobsContext): Router {
             });
             const ms = Date.now() - started;
 
+            metrics.recordJob('sips-generate', ms, result.failed === 0, result);
             ctx.logger.info(
                 { job: 'sips-generate', ...result, ms },
                 'job finished',

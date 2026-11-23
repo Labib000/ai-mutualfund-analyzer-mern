@@ -1,0 +1,50 @@
+# Prometheus + Grafana for watching load tests live. Local only.
+#   npm run grafana:up     → Grafana on http://localhost:3001 (no login)
+#   npm run grafana:down
+#
+# Works with Docker Desktop and Docker Engine: containers reach the app on this
+# machine as host.docker.internal:3000. Ports are published on 127.0.0.1 only.
+name: hisaab-load
+
+services:
+    prometheus:
+        image: prom/prometheus:v3.1.0
+        ports: ['127.0.0.1:9090:9090']
+        # Docker Desktop defines host.docker.internal; this adds it on Docker Engine.
+        extra_hosts: ['host.docker.internal:host-gateway']
+        environment:
+            CRON_SECRET: '${CRON_SECRET:?Set CRON_SECRET in .env, Prometheus needs it to read /internal/metrics/prometheus}'
+        # Prometheus reads the bearer token from a file, so write one from the env.
+        entrypoint:
+            - /bin/sh
+            - -c
+            - >-
+                printf %s "$$CRON_SECRET" > /tmp/cron-secret &&
+                exec /bin/prometheus
+                --config.file=/etc/prometheus/prometheus.yml
+                --storage.tsdb.path=/prometheus
+                --storage.tsdb.retention.time=7d
+                --web.listen-address=0.0.0.0:9090
+                --web.enable-remote-write-receiver
+        volumes:
+            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+            - prometheus-data:/prometheus
+
+    grafana:
+        image: grafana/grafana:11.4.0
+        ports: ['127.0.0.1:3001:3000']
+        depends_on: [prometheus]
+        environment:
+            # Local only, so no login screen.
+            GF_AUTH_ANONYMOUS_ENABLED: 'true'
+            GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+            GF_AUTH_DISABLE_LOGIN_FORM: 'true'
+            GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/hisaab-load.json
+        volumes:
+            - ./grafana/provisioning:/etc/grafana/provisioning:ro
+            - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+            - grafana-data:/var/lib/grafana
+
+volumes:
+    prometheus-data:
+    grafana-data:

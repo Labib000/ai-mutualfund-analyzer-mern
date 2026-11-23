@@ -16,8 +16,13 @@
         "check": "npm run build -w shared && vp check",
         "check:fix": "npm run build -w shared && vp check --fix",
         "db:seed": "npm run build -w shared && npm run db:seed -w server",
+        "db:seed:load": "npm run build -w shared && npm run db:seed:load -w server --",
         "job:nav-import": "npm run build -w shared && npm run job:nav-import -w server --",
         "job:sips-generate": "npm run build -w shared && npm run job:sips-generate -w server --",
+        "load:server": "npm run build -w shared && npm run build -w server && LOG_LEVEL=warn node --env-file-if-exists=.env server/dist/index.js",
+        "load": "bash server/load/run.sh",
+        "grafana:up": "docker compose --env-file .env -f server/load/docker-compose.yml up -d",
+        "grafana:down": "docker compose --env-file .env -f server/load/docker-compose.yml down",
         "rag:check": "npm run rag:check -w server",
         "rag:extract": "npm run rag:extract -w server"
     },

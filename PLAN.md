@@ -10,6 +10,8 @@ A rebuild of Hisaab, the personal mutual fund tracker for Indian investors, on *
 >
 > **Revision 9 (2026-11-03).** New tool, not in Laravel: **fund compare** (`/tools/compare`, `GET /api/compare?ids=a,b,c`), up to three funds side by side. Decisions: any active scheme can be compared (its mfapi history is fetched on first use, as when adding a fund); no ratings or "best fund" labels, only the best figure in each row set in bold; metrics are trailing returns (1M to 10Y, since launch), the last five calendar years and this year so far, 1Y and 3Y rolling returns (weekly windows over 5 and 10 years), volatility, Sharpe and Sortino over the last 3 years against `COMPARE_RISK_FREE_RATE` (default 6.5%), the largest fall over the whole history with its recovery date, and a ₹10,000 monthly SIP check over 1, 3 and 5 years; 1Y/3Y/5Y and volatility reuse `fundStats()` so the fund page and compare agree; results cache per scheme (`scheme-compare:<id>`) until a newer NAV. Expense ratio, AUM, exit load, holdings and benchmark data aren't available, so they aren't shown. Known limit: on the free Atlas tier the first compare of a fund nobody has used yet takes 5–20 s, mostly storing its NAV history; the page says so while it loads.
 
+> **Revision 11 (2026-11-18).** Phase 4.5 (RAG) is on hold. New **Phase 4.4: Redis**, done first, mainly for learning. Decisions: Redis is optional. With `REDIS_URL` unset, everything stays on Mongo as before, so Hostinger shared hosting still works. Development and tests use Docker (`redis:7-alpine`), and production uses a hosted Redis (Upstash, Mumbai). We connect with `ioredis` over the standard protocol, so Redis Cloud works too. Redis sits behind the existing seams (`cache.ts`, `rateLimitStore.ts`, `jobLock.ts`), each with a Mongo fallback if Redis errors. We write our own stores (no `rate-limit-redis` or `connect-redis`). Sessions stay in Mongo unless R5 decides otherwise. Work follows `REDIS_STUDY_GUIDE.md`.
+>
 > **Revision 10 (2026-11-04).** New Phase 4.5, not in Laravel: **fund document RAG**, citation-backed answers from fund documents on the Ask page. Decisions: Gemini embeddings behind an `EmbeddingProvider` interface; ingestion is a local CLI only, writing straight to Atlas, so it needs no cron and avoids Hostinger's request timeout; the first scope is KIMs and the latest factsheets for 5–10 fund houses and about 50 funds, with SIDs as a stretch goal; PDFs aren't committed, only a manifest; a rule-based router sends questions to the portfolio path, the document path or both, because `RunAiFeature` counts every successful call and an AI router would charge two requests; hybrid search runs `$vectorSearch` and `$search` separately and merges them with our own Reciprocal Rank Fusion, since `$rankFusion` on M0 is unconfirmed; `SYSTEM` stays unchanged; a document answer counts as one `ask`, while embedding calls and "not found" don't count; personal figures come only from `<portfolio_data>`. Work follows `RAG_STUDY_GUIDE.md`: each milestone starts by studying its topics. To confirm: Gemini's model, dimensions, rate limits and free-tier data terms, and Atlas M0's storage limit (MongoDB's docs confirm 3 search and vector indexes; we use 2).
 
 > **Revision 8 (2026-11-03).** Phase 4 decisions: Groq is called with Node's built-in `fetch` (no SDK, no new packages); the prompts are copied byte for byte from Laravel and pinned by tests; AI errors use the app's `{ message }` body (plus `remaining`) instead of Laravel's `{ error }`, so the client's `ApiError` shows them as they are; the explain endpoint is `POST /api/holdings/:id/explain`; `aiUsage` stores `provider` and `model` and no `cached` flag (cached answers aren't logged, as in Laravel). One deliberate change from Laravel: `fundStats()` now scales NAVs from before a **face-value change** (a one-step jump of 8× or more, e.g. HDFC Liquid Fund's ×100 on 30 Aug 2015) onto today's basis. Without it, mfapi.in's raw NAVs gave that fund "+48.9% a year since 2012", on the fund facts card and in the AI's explanation; the stats cache version gained a `v2|` prefix so old figures are recomputed.
@@ -39,7 +41,7 @@ A rebuild of Hisaab, the personal mutual fund tracker for Indian investors, on *
 
 - **Hosting: Hostinger Business shared hosting, as a Node.js Web App** (Node 22 or 24). One Node app, so the API and the built React client deploy together: Express serves `client/dist`.
 - **Database: MongoDB Atlas.** Hostinger shared hosting can't run MongoDB. Use the free M0 tier at first, in the region nearest the Hostinger server (Mumbai `ap-south-1` if the server is in India).
-- **No long-running extras:** no Redis, no workers, no in-process schedulers (`node-cron`). Hostinger can restart or idle the app. Scheduled work runs from **hPanel cron**, which calls secret-protected HTTP endpoints (see Phase 2a).
+- **No long-running extras:** no self-hosted Redis, no workers, no in-process schedulers (`node-cron`). A hosted Redis is allowed as an optional extra with a Mongo fallback (Revision 11). Hostinger can restart or idle the app. Scheduled work runs from **hPanel cron**, which calls secret-protected HTTP endpoints (see Phase 2a).
 - **Money is integer paise.** Fields end in `Paise` and are stored as integer `Number`s; ₹ amounts stay well under 2^53.
 - **NAVs and units are exact decimals.**
   - They're stored as normalised strings: NAV has 4 dp (`"123.4560"`) and units have 3 dp (`"10.250"`).
@@ -222,7 +224,25 @@ As a guard against two requests racing on the same holding, each write also incr
 - SIP calculator (Phase 2).
 - Fund compare (Revision 9): the maths in `server/src/portfolio/fundCompare.ts`, the endpoint in `server/src/routes/compare.ts`, the page in `client/src/pages/tools/compare.tsx`; also linked from each fund page.
 
+### Phase 4.4: Redis
+
+An optional Redis layer behind the existing Mongo-backed seams. See Revision 11 and `REDIS_STUDY_GUIDE.md`. Each milestone starts by studying its topics.
+
+- **R0, study:** the guide's Part 0.
+- **R1, connection:** optional `REDIS_URL` in `config.ts`, a `lib/redis.ts` client (lazy connect, short timeouts), a Redis check on the health endpoint, `docker-compose.yml`, `.env.example`.
+- **R2, cache:** a `CacheStore` interface with Mongo and Redis versions behind `cacheGet`/`cachePut`. Callers don't change, and Mongo takes over if Redis errors.
+- **R3, rate limits:** `RedisRateLimitStore` (`INCR` + `PEXPIRE` in one `MULTI`), with the same fixed window as `MongoRateLimitStore`.
+- **R4, job lock:** `SET NX PX` to take the lock; a Lua compare-and-delete to release it.
+- **R5, sessions:** decide whether to move them, and write up the trade-off either way.
+- **R6, measure:** before and after timings for the dashboard and compare, plus a scaling section in the README.
+  - *Tooling done (2026-11-23), before R1, so the Mongo baseline comes first:* `/internal/metrics` (Node built-ins only, no `prom-client`), `npm run db:seed:load` and k6 scenarios run through Docker (`npm run load -- <scenario>`). See `server/load/README.md`. Then Prometheus and Grafana for live graphs: `prom-client` approved (2026-11-23), served at `/internal/metrics/prometheus`, with a Docker Compose stack in `server/load/` (`npm run grafana:up`, Grafana on :3001).
+- Tests: contract tests run the same cases against the Mongo and Redis versions. The Redis cases are skipped without `REDIS_URL`, and CI adds a `redis:7` service.
+- Needs approval: `ioredis`.
+- *Done when:* tests pass with and without Redis, the app keeps working when Redis is stopped, timings are recorded, and CI is green.
+
 ### Phase 4.5: Fund document RAG
+
+**On hold (2026-11-18)** until Phase 4.4 is done.
 
 Citation-backed answers from fund documents on the Ask page. See Revision 10 for the decisions and `RAG_STUDY_GUIDE.md` for the concepts. Each milestone starts by studying its topics, and the next one starts when the user is ready.
 
