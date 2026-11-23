@@ -33,6 +33,10 @@ npm run db:seed:load   # load-user-<n>@load.test users + synthetic schemes (AMFI
 npm run load:server    # built server on :3000, LOG_LEVEL=warn
 npm run load -- dashboard   # health | login | dashboard | holdings | compare | mixed; RATE=, DURATION=, P95=
 npm run grafana:up     # Prometheus :9090 + Grafana :3001 (dashboard provisioned from server/load/grafana/); grafana:down
+
+# Redis (optional, Phase 4.4); its test cases are skipped unless REDIS_URL is set (CI sets it)
+npm run redis:up       # local redis:7-alpine via root docker-compose.yml; redis:cli, redis:down
+REDIS_URL=redis://localhost:6379 npm test
 ```
 
 To run a single test file or test (build `shared` first if it changed):
@@ -65,6 +69,11 @@ Formatting: 4-space indent, single quotes, 80 columns. `client/src/components/ui
 - **Caching:** `lib/cache.ts` (`cacheGet`/`cachePut` over a Mongo `cache` collection with a TTL index). Keys use version or hash prefixes (e.g. stats `v2|`, `scheme-compare:<id>`), so changing a computed shape means bumping the key. `cache.ts`, `rateLimitStore.ts` and `jobLock.ts` are the seams Phase 4.4 puts Redis behind, with a Mongo fallback.
 
 **Metrics.** `lib/metrics.ts` records each event twice: in a resettable JSON registry (Node built-ins) and in `prom-client` histograms and counters (prefixed `hisaab_`, plus Node's default metrics). It covers latency per route, Mongo commands per request (counted through AsyncLocalStorage and the driver's command events, wired in `db.ts`), cache hits by key prefix, jobs, event-loop delay and memory. Read it at `GET /internal/metrics` (JSON, cleared by `POST /internal/metrics/reset`) or `GET /internal/metrics/prometheus`. All of these are behind the cron secret, which can also be sent as `Authorization: Bearer`. If you rename a Prometheus metric, update `server/load/grafana/dashboards/hisaab-load.json` too. A new cache store or job should report to it too.
+
+**Redis (Phase 4.4, in progress).** Redis is optional: with `REDIS_URL` unset everything stays on Mongo. `lib/redis.ts` holds one shared `ioredis` client, created in `index.ts` with `connectRedis()`. It's tuned to fail fast (no offline queue, 500 ms command timeout, reconnects in the background) so callers can fall back to Mongo. Stores make calls through `timedRedis(op, fn)`, which feeds the metrics, and call `metrics.recordRedisFallback(store)` when they fall back. Health reports `redis` but stays 200 when Redis is down. The full plan for R2–R6 (cache, rate limits, job lock, sessions decision, measuring) and its design rules are in `PLAN.md` Phase 4.4:
+- key namespace `hisaab:` (tests use their own prefix);
+- one contract test suite per store, run against both Mongo and Redis;
+- deletes go through the cache API (`deleteUserData` must clear Redis too).
 
 **AI.** Every provider call goes through `RunAiFeature` (quota check, then the call, then an `aiUsage` log row). The monthly per-user quota counts successful calls. The AI only sees computed figures from `portfolioContext` and never PII. It must explain and never advise. The prompts in `ai/prompts.ts` are copied byte for byte from Laravel and pinned by tests.
 

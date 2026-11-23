@@ -230,6 +230,14 @@ An optional Redis layer behind the existing Mongo-backed seams. See Revision 11 
 
 - **R0, study:** the guide's Part 0.
 - **R1, connection:** optional `REDIS_URL` in `config.ts`, a `lib/redis.ts` client (lazy connect, short timeouts), a Redis check on the health endpoint, `docker-compose.yml`, `.env.example`.
+  - *Done (2026-11-23):* `ioredis` approved and added. The client never queues offline, times commands out at 500 ms and reconnects in the background. Health stays 200 with `redis: "down"` (Redis is optional). There's a `timedRedis()` helper and a Redis/fallback metric for each store, a Redis row in Grafana, and a Redis service in CI. Local Redis runs with `--maxmemory 128mb --maxmemory-policy volatile-lru`.
+  - *Design rules for R2–R4:*
+    - keys under `hisaab:` (`hisaab:cache:`, `hisaab:rl:`, `hisaab:lock:`);
+    - when Redis is configured it's the only store, with a Mongo fallback for each call on error (no double writes);
+    - cache deletes go through the cache API, so `deleteUserData` and `seedLoad` clear Redis too;
+    - one contract test suite per store, run against Mongo and Redis.
+  - *Study runs in parallel* (decided 2026-11-23): we build first, the user studies that milestone's topics the same night, and we review the answers before the next milestone.
+  - *Gate before R2:* the rest of the Mongo baseline (`mixed` at 5/10/15/20, `dashboard` cold and warm).
 - **R2, cache:** a `CacheStore` interface with Mongo and Redis versions behind `cacheGet`/`cachePut`. Callers don't change, and Mongo takes over if Redis errors.
 - **R3, rate limits:** `RedisRateLimitStore` (`INCR` + `PEXPIRE` in one `MULTI`), with the same fixed window as `MongoRateLimitStore`.
 - **R4, job lock:** `SET NX PX` to take the lock; a Lua compare-and-delete to release it.

@@ -1284,6 +1284,187 @@
                     "refId": "A"
                 }
             ]
+        },
+        {
+            "type": "row",
+            "title": "Redis",
+            "id": 29,
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 74
+            },
+            "panels": []
+        },
+        {
+            "type": "timeseries",
+            "title": "Redis calls / s by operation",
+            "id": 30,
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Empty until Redis is configured (REDIS_URL) and the cache, rate limits or job lock use it.",
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 75
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ops",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10,
+                        "showPoints": "never",
+                        "spanNulls": true,
+                        "stacking": {
+                            "mode": "none"
+                        }
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": ["mean", "max", "lastNotNull"]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "sum by (op) (rate(hisaab_redis_command_duration_seconds_count[$__rate_interval]))",
+                    "legendFormat": "{{op}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "type": "timeseries",
+            "title": "Redis call p95 by operation",
+            "id": 31,
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Compare with the Mongo command p95 above: this is the time Redis saves.",
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 75
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10,
+                        "showPoints": "never",
+                        "spanNulls": true,
+                        "stacking": {
+                            "mode": "none"
+                        }
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": ["mean", "max", "lastNotNull"]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "histogram_quantile(0.95, sum by (le, op) (rate(hisaab_redis_command_duration_seconds_bucket[$__rate_interval])))",
+                    "legendFormat": "{{op}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "type": "timeseries",
+            "title": "Fallbacks to Mongo / s",
+            "id": 32,
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Should be 0. Rises when Redis is down or slow, while the app keeps working on Mongo.",
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 75
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ops",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10,
+                        "showPoints": "never",
+                        "spanNulls": true,
+                        "stacking": {
+                            "mode": "none"
+                        }
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": ["mean", "max", "lastNotNull"]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "(sum by (store) (rate(hisaab_redis_fallback_total[$__rate_interval])))",
+                    "legendFormat": "{{store}}",
+                    "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "sum(rate(hisaab_redis_command_duration_seconds_count{ok=\"false\"}[$__rate_interval])) or vector(0)",
+                    "legendFormat": "failed Redis calls",
+                    "refId": "B"
+                }
+            ]
         }
     ],
     "templating": {

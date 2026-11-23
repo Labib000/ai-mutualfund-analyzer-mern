@@ -49,6 +49,15 @@ const envSchema = z.object({
     /** Shared secret hPanel cron sends as X-Cron-Secret; job endpoints answer 503 without it. */
     CRON_SECRET: optionalString,
 
+    /**
+     * Optional Redis (Phase 4.4), e.g. redis://localhost:6379, or rediss://
+     * (TLS) for Upstash. Unset: Redis is off and everything stays on Mongo.
+     */
+    REDIS_URL: optionalString.refine(
+        (url) => url === undefined || /^rediss?:\/\//.test(url),
+        'REDIS_URL must start with redis:// or rediss://',
+    ),
+
     AMFI_NAV_URL: z
         .url()
         .default('https://www.amfiindia.com/spages/NAVAll.txt'),

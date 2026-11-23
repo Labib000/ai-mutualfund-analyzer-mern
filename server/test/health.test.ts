@@ -22,6 +22,7 @@ describe('GET /api/health', () => {
         expect(healthResponseSchema.parse(res.body)).toEqual({
             status: 'ok',
             db: 'up',
+            redis: 'disabled',
             today: '2026-10-08',
             time: '2026-10-08T06:30:00.000Z',
         });

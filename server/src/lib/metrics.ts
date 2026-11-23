@@ -69,6 +69,19 @@ const promJob = new Histogram({
     buckets: [0.1, 0.5, 1, 5, 10, 30, 60, 120, 300],
     registers: [promRegistry],
 });
+const promRedis = new Histogram({
+    name: 'hisaab_redis_command_duration_seconds',
+    help: 'Redis call latency by operation (e.g. cache.get, rl.increment).',
+    labelNames: ['op', 'ok'] as const,
+    buckets: [0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.5],
+    registers: [promRegistry],
+});
+const promRedisFallback = new Counter({
+    name: 'hisaab_redis_fallback_total',
+    help: 'Calls that fell back to Mongo because Redis failed, by store.',
+    labelNames: ['store'] as const,
+    registers: [promRegistry],
+});
 
 /** Samples kept per series for percentiles. */
 const RING_SIZE = 5_000;
@@ -183,6 +196,8 @@ class Metrics {
     private cache = new Map<string, CacheStats>();
     private dbCommands = new Map<string, DbCommandStats>();
     private jobs = new Map<string, JobStats>();
+    private redisOps = new Map<string, DbCommandStats>();
+    private redisFallbacks = new Map<string, number>();
     private loop: ELDHistogram | null = null;
 
     /** Starts the event-loop delay monitor (idempotent). */
@@ -199,6 +214,8 @@ class Metrics {
         this.cache.clear();
         this.dbCommands.clear();
         this.jobs.clear();
+        this.redisOps.clear();
+        this.redisFallbacks.clear();
         this.loop?.reset();
     }
 
@@ -311,6 +328,27 @@ class Metrics {
         promJob.labels(name, String(ok)).observe(ms / 1000);
     }
 
+    /** One Redis call made by a store, e.g. ("cache.get", 0.4, true). */
+    recordRedisCommand(op: string, ms: number, ok: boolean): void {
+        let stats = this.redisOps.get(op);
+        if (!stats) {
+            stats = { latency: new LatencySeries(), failed: 0 };
+            this.redisOps.set(op, stats);
+        }
+        stats.latency.record(ms);
+        if (!ok) stats.failed += 1;
+        promRedis.labels(op, String(ok)).observe(ms / 1000);
+    }
+
+    /** A store used Mongo for one call because Redis failed. */
+    recordRedisFallback(store: string): void {
+        this.redisFallbacks.set(
+            store,
+            (this.redisFallbacks.get(store) ?? 0) + 1,
+        );
+        promRedisFallback.labels(store).inc();
+    }
+
     snapshot() {
         const elapsedMs = Date.now() - this.startedAt.getTime();
         const cpu = process.cpuUsage(this.cpuAtStart);
@@ -391,6 +429,15 @@ class Metrics {
                     },
                 ]),
             ),
+            redis: {
+                commands: Object.fromEntries(
+                    [...this.redisOps.entries()].map(([op, r]) => [
+                        op,
+                        { ...r.latency.summary(), failed: r.failed },
+                    ]),
+                ),
+                fallbacks: Object.fromEntries(this.redisFallbacks),
+            },
             eventLoop: this.loop
                 ? {
                       meanMs: ns(this.loop.mean),

@@ -1,0 +1,33 @@
+# Local Redis for development and tests (Phase 4.4). Production uses a hosted
+# Redis (Upstash); see REDIS_URL in .env.example.
+#   npm run redis:up      start it (waits until it answers PING)
+#   npm run redis:cli     open redis-cli inside it
+#   npm run redis:down    stop and remove it
+# Load testing has its own stack in server/load/docker-compose.yml.
+name: hisaab
+
+services:
+    redis:
+        image: redis:7-alpine
+        # Only this machine can reach it.
+        ports: ['127.0.0.1:6379:6379']
+        # A cache: nothing is written to disk, so a restart starts empty.
+        # At 128 MB, evict the least recently used keys that have a TTL
+        # (every Hisaab key has one) instead of refusing writes.
+        command:
+            [
+                'redis-server',
+                '--save',
+                '',
+                '--appendonly',
+                'no',
+                '--maxmemory',
+                '128mb',
+                '--maxmemory-policy',
+                'volatile-lru',
+            ]
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 5s
+            timeout: 3s
+            retries: 5

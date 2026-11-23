@@ -4,6 +4,11 @@ import { z } from 'zod';
 export const healthResponseSchema = z.object({
     status: z.enum(['ok', 'degraded']),
     db: z.enum(['up', 'down']),
+    /**
+     * Redis is optional and the app falls back to Mongo, so "down" here
+     * doesn't make the status "degraded".
+     */
+    redis: z.enum(['up', 'down', 'disabled']),
     /** IST calendar date on the server, "YYYY-MM-DD". */
     today: z.string(),
     time: z.string(),

@@ -4,6 +4,7 @@ import { createApp } from './app.js';
 import { ConfigError, loadConfig } from './config.js';
 import { connectDb, disconnectDb } from './db.js';
 import { createLogger } from './lib/logger.js';
+import { connectRedis, disconnectRedis } from './lib/redis.js';
 import { ensureSessionIndexes } from './lib/session.js';
 
 async function main(): Promise<void> {
@@ -32,6 +33,11 @@ async function main(): Promise<void> {
         process.exit(1);
     }
 
+    // Optional, and connects in the background: the app starts even if Redis is down.
+    if (config.REDIS_URL) {
+        connectRedis(config.REDIS_URL, logger);
+    }
+
     const clientDist = path.resolve(import.meta.dirname, '../../client/dist');
     const app = createApp({ config, logger, clientDist });
 
@@ -50,9 +56,9 @@ async function main(): Promise<void> {
         logger.info({ signal }, 'shutting down');
 
         server.close(() => {
-            disconnectDb()
+            Promise.all([disconnectDb(), disconnectRedis()])
                 .catch((err: unknown) =>
-                    logger.error({ err }, 'error closing MongoDB'),
+                    logger.error({ err }, 'error closing connections'),
                 )
                 .finally(() => process.exit(0));
         });

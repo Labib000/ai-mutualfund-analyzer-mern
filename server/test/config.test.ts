@@ -27,6 +27,29 @@ describe('loadConfig', () => {
         expect(config.CRON_SECRET).toBeUndefined();
     });
 
+    it('accepts redis:// and rediss:// for REDIS_URL, and treats empty as unset', () => {
+        expect(loadConfig(base).REDIS_URL).toBeUndefined();
+        expect(
+            loadConfig({ ...base, REDIS_URL: '' }).REDIS_URL,
+        ).toBeUndefined();
+        expect(
+            loadConfig({ ...base, REDIS_URL: 'redis://localhost:6379' })
+                .REDIS_URL,
+        ).toBe('redis://localhost:6379');
+        expect(
+            loadConfig({
+                ...base,
+                REDIS_URL: 'rediss://default:pw@example.upstash.io:6379',
+            }).REDIS_URL,
+        ).toBe('rediss://default:pw@example.upstash.io:6379');
+    });
+
+    it('rejects a REDIS_URL that is not a Redis URL', () => {
+        expect(() =>
+            loadConfig({ ...base, REDIS_URL: 'http://localhost:6379' }),
+        ).toThrow(/REDIS_URL must start with redis:\/\/ or rediss:\/\//);
+    });
+
     it('requires MONGODB_URI', () => {
         expect(() => loadConfig({ SESSION_SECRET: SECRET })).toThrow(
             ConfigError,

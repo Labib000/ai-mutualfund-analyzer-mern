@@ -214,7 +214,7 @@ Today the cache, the rate limits and the job locks are all MongoDB round trips. 
 | Step | What | Status |
 |---|---|---|
 | R0 | Study: Docker basics, Redis data types, cache-aside | In progress |
-| R1 | Connection: optional `REDIS_URL`, a health check, Docker Compose | Planned |
+| R1 | Connection: optional `REDIS_URL`, a health check, Docker Compose, metrics | ✅ Done |
 | R2 | Cache: a `CacheStore` interface with MongoDB and Redis versions | Planned |
 | R3 | Rate limits: `INCR` + `PEXPIRE` in one `MULTI`, same fixed window | Planned |
 | R4 | Job lock: `SET NX PX` to take it, a Lua compare-and-delete to release it | Planned |
@@ -222,6 +222,18 @@ Today the cache, the rate limits and the job locks are all MongoDB round trips. 
 | R6 | Measure: before and after, with the tooling above | Tooling done, results pending |
 
 The same tests run against both the MongoDB and Redis versions of each store. The Redis cases are skipped when Redis isn't available.
+
+**What R1 gives:**
+
+- **Fails fast.** The client is set up so Redis can never slow a request down:
+  - it connects in the background, so the app starts even when Redis is down;
+  - commands fail at once while disconnected instead of queueing;
+  - any command over 500 ms fails;
+  - it reconnects by itself, backing off up to 5 seconds.
+- **Health check.** `/api/health` reports `"redis": "up" | "down" | "disabled"`. Redis being down doesn't make the app "degraded", because it falls back to MongoDB.
+- **Metrics.** Every Redis call is timed, each fallback to MongoDB is counted, and both appear on the Grafana dashboard.
+
+Run Redis locally with `npm run redis:up`, then add `REDIS_URL=redis://localhost:6379` to `.env`.
 
 ## Tech stack
 
@@ -277,7 +289,7 @@ Fill in `.env`:
 | `MAIL_*` | Optional locally: without SMTP details, emails are written to `logs/mail.log` |
 | `AI_API_KEY` | Optional. A free [Groq API key](https://console.groq.com/keys) for the AI features; without one they say the AI is unavailable. The other `AI_*` settings have working defaults (see `.env.example`) |
 | `GEMINI_API_KEY` | Optional, and not used yet. A [Gemini API key](https://aistudio.google.com/apikey) for the RAG work |
-| `REDIS_URL` | Planned, not used yet. Will turn on the optional Redis layer |
+| `REDIS_URL` | Optional. `redis://localhost:6379` locally (`npm run redis:up`), or `rediss://…` from Upstash. Connected and health-checked; the cache, rate limits and locks move to it in R2–R4 |
 | `COMPARE_RISK_FREE_RATE` | Optional. The yearly risk-free rate (%) for Sharpe and Sortino on the compare page; defaults to 6.5 |
 
 ### Load fund data and a demo user
@@ -312,6 +324,8 @@ This starts the API on http://localhost:3000 and the app on **http://localhost:5
 | `npm run load:server` | Build and start the server for load testing (quieter logs) |
 | `npm run load -- <scenario>` | Run a k6 scenario in Docker and save the results |
 | `npm run grafana:up` / `grafana:down` | Start or stop Prometheus and Grafana |
+| `npm run redis:up` / `redis:down` | Start or stop the local Redis in Docker |
+| `npm run redis:cli` | Open `redis-cli` inside the local Redis |
 | `npm run rag:check` | Validate the fund document list and test questions |
 | `npm run rag:extract` | Extract text from the fund PDFs to `server/rag/docs/text/` for review |
 
@@ -334,7 +348,7 @@ A lock in the database stops two runs of the same job from overlapping.
 npm test
 ```
 
-Server tests run against an in-memory MongoDB replica set, so they need no setup. They cover the API, the portfolio maths and the jobs, and several check figures against the original Laravel app to make sure both give the same numbers. The metrics endpoints have their own tests. Load tests are separate and run by hand (see [Scaling and monitoring](#scaling-and-monitoring)). GitHub Actions runs lint, type checks, tests and the build on every push to `main` and every pull request.
+Server tests run against an in-memory MongoDB replica set, so they need no setup. They cover the API, the portfolio maths and the jobs, and several check figures against the original Laravel app to make sure both give the same numbers. Redis test cases run only when `REDIS_URL` is set: `npm run redis:up`, then `REDIS_URL=redis://localhost:6379 npm test`. CI runs them with a Redis service. The metrics endpoints have their own tests. Load tests are separate and run by hand (see [Scaling and monitoring](#scaling-and-monitoring)). GitHub Actions runs lint, type checks, tests and the build on every push to `main` and every pull request.
 
 ## Roadmap
 
