@@ -25,6 +25,7 @@ const MAX_RECONNECT_DELAY_MS = 5_000;
 const ERROR_LOG_INTERVAL_MS = 60_000;
 
 let client: Redis | null = null;
+let log: Logger | undefined;
 
 /**
  * Creates the shared client and starts connecting without waiting for it.
@@ -32,6 +33,7 @@ let client: Redis | null = null;
  */
 export function connectRedis(url: string, logger?: Logger): Redis {
     if (client) client.disconnect();
+    log = logger;
 
     const redis = new Redis(url, {
         lazyConnect: true,
@@ -119,6 +121,49 @@ export async function timedRedis<T>(
             ok,
         );
     }
+}
+
+/** When each store last logged a fallback, to log at most once a minute. */
+const fallbackLoggedAt = new Map<string, number>();
+
+/**
+ * A store is about to use Mongo for one call because Redis failed: count it
+ * (hisaab_redis_fallback_total) and log it, at most once a minute per store.
+ */
+export function redisFallback(store: string, error: unknown): void {
+    metrics.recordRedisFallback(store);
+
+    const now = Date.now();
+    if (now - (fallbackLoggedAt.get(store) ?? 0) >= ERROR_LOG_INTERVAL_MS) {
+        fallbackLoggedAt.set(store, now);
+        const err = error as (Error & { code?: string }) | undefined;
+        log?.warn(
+            { store, err: err?.message || err?.code || String(error) },
+            'Redis failed; using Mongo',
+        );
+    }
+}
+
+/**
+ * Waits until the shared client is connected. For CLI scripts, which run one
+ * command right away; the server doesn't wait (early calls fall back).
+ */
+export async function waitForRedis(timeoutMs = 5_000): Promise<boolean> {
+    const redis = client;
+    if (!redis) return false;
+    if (redis.status === 'ready') return true;
+
+    return new Promise<boolean>((resolve) => {
+        const timer = setTimeout(() => {
+            redis.off('ready', onReady);
+            resolve(false);
+        }, timeoutMs);
+        const onReady = () => {
+            clearTimeout(timer);
+            resolve(true);
+        };
+        redis.once('ready', onReady);
+    });
 }
 
 /** "up" when Redis answers PING, "down" when it doesn't, "disabled" when not configured. */

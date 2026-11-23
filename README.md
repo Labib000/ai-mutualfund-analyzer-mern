@@ -215,7 +215,7 @@ Today the cache, the rate limits and the job locks are all MongoDB round trips. 
 |---|---|---|
 | R0 | Study: Docker basics, Redis data types, cache-aside | In progress |
 | R1 | Connection: optional `REDIS_URL`, a health check, Docker Compose, metrics | ✅ Done |
-| R2 | Cache: a `CacheStore` interface with MongoDB and Redis versions | Planned |
+| R2 | Cache: a `CacheStore` interface with MongoDB and Redis versions | ✅ Done |
 | R3 | Rate limits: `INCR` + `PEXPIRE` in one `MULTI`, same fixed window | Planned |
 | R4 | Job lock: `SET NX PX` to take it, a Lua compare-and-delete to release it | Planned |
 | R5 | Sessions: decide whether to move them, and write up why | Planned |
@@ -289,7 +289,7 @@ Fill in `.env`:
 | `MAIL_*` | Optional locally: without SMTP details, emails are written to `logs/mail.log` |
 | `AI_API_KEY` | Optional. A free [Groq API key](https://console.groq.com/keys) for the AI features; without one they say the AI is unavailable. The other `AI_*` settings have working defaults (see `.env.example`) |
 | `GEMINI_API_KEY` | Optional, and not used yet. A [Gemini API key](https://aistudio.google.com/apikey) for the RAG work |
-| `REDIS_URL` | Optional. `redis://localhost:6379` locally (`npm run redis:up`), or `rediss://…` from Upstash. Connected and health-checked; the cache, rate limits and locks move to it in R2–R4 |
+| `REDIS_URL` | Optional. `redis://localhost:6379` locally (`npm run redis:up`), or `rediss://…` from Upstash. Holds the cache (R2); rate limits and locks move to it in R3–R4 |
 | `COMPARE_RISK_FREE_RATE` | Optional. The yearly risk-free rate (%) for Sharpe and Sortino on the compare page; defaults to 6.5 |
 
 ### Load fund data and a demo user

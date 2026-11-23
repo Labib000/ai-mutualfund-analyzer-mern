@@ -239,6 +239,7 @@ An optional Redis layer behind the existing Mongo-backed seams. See Revision 11 
   - *Study runs in parallel* (decided 2026-11-23): we build first, the user studies that milestone's topics the same night, and we review the answers before the next milestone.
   - *Gate before R2:* the rest of the Mongo baseline (`mixed` at 5/10/15/20, `dashboard` cold and warm).
 - **R2, cache:** a `CacheStore` interface with Mongo and Redis versions behind `cacheGet`/`cachePut`. Callers don't change, and Mongo takes over if Redis errors.
+  - *Done (2026-11-23):* Redis is the only store while it works (no double write); each failed call falls back to Mongo and counts in `hisaab_redis_fallback_total{store="cache"}`. `cacheForget`/`cacheForgetPrefix` (SCAN + UNLINK) clear both stores and throw if Redis is configured but down, so account deletion fails with a 500 and can be retried rather than leaving figures in Redis. `deleteUserData` and `db:seed:load` go through them. Cache metrics have a `backend` label. Contract suite in `test/lib/cacheStore.test.ts`. First look: `mixed` at 10 req/s, p95 4.2 s → 1.2 s.
 - **R3, rate limits:** `RedisRateLimitStore` (`INCR` + `PEXPIRE` in one `MULTI`), with the same fixed window as `MongoRateLimitStore`.
 - **R4, job lock:** `SET NX PX` to take the lock; a Lua compare-and-delete to release it.
 - **R5, sessions:** decide whether to move them, and write up the trade-off either way.

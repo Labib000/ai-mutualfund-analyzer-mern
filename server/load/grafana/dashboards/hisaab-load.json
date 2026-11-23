@@ -920,13 +920,13 @@
         },
         {
             "type": "timeseries",
-            "title": "Cache operations / s",
+            "title": "Cache operations / s by backend",
             "id": 22,
             "datasource": {
                 "type": "prometheus",
                 "uid": "prometheus"
             },
-            "description": "",
+            "description": "redis = served by Redis; mongo = Redis is off, or this call fell back to Mongo.",
             "gridPos": {
                 "h": 8,
                 "w": 12,
@@ -965,8 +965,8 @@
                         "type": "prometheus",
                         "uid": "prometheus"
                     },
-                    "expr": "sum by (prefix, outcome) (rate(hisaab_cache_operations_total[$__rate_interval]))",
-                    "legendFormat": "{{prefix}} {{outcome}}",
+                    "expr": "sum by (backend, outcome) (rate(hisaab_cache_operations_total[$__rate_interval]))",
+                    "legendFormat": "{{backend}} {{outcome}}",
                     "refId": "A"
                 }
             ]

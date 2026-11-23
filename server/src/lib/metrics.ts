@@ -58,8 +58,8 @@ const promDb = new Histogram({
 });
 const promCache = new Counter({
     name: 'hisaab_cache_operations_total',
-    help: 'Cache lookups and writes by key prefix and outcome (hit, miss, write).',
-    labelNames: ['prefix', 'outcome'] as const,
+    help: 'Cache lookups and writes by key prefix, outcome (hit, miss, write) and backend (redis, mongo).',
+    labelNames: ['prefix', 'outcome', 'backend'] as const,
     registers: [promRegistry],
 });
 const promJob = new Histogram({
@@ -173,7 +173,14 @@ type RouteStats = {
     status: Record<string, number>;
 };
 
-type CacheStats = { hits: number; misses: number; writes: number };
+type CacheStats = {
+    hits: number;
+    misses: number;
+    writes: number;
+    /** Operations served by each store (Mongo only = fallback or no Redis). */
+    redis: number;
+    mongo: number;
+};
 
 type DbCommandStats = { latency: LatencySeries; failed: number };
 
@@ -292,17 +299,22 @@ class Metrics {
     }
 
     /** A cache lookup or write; the key's prefix (before ":") is the label. */
-    recordCache(key: string, outcome: 'hit' | 'miss' | 'write'): void {
+    recordCache(
+        key: string,
+        outcome: 'hit' | 'miss' | 'write',
+        backend: 'redis' | 'mongo' = 'mongo',
+    ): void {
         const prefix = key.split(':')[0]!;
         let stats = this.cache.get(prefix);
         if (!stats) {
-            stats = { hits: 0, misses: 0, writes: 0 };
+            stats = { hits: 0, misses: 0, writes: 0, redis: 0, mongo: 0 };
             this.cache.set(prefix, stats);
         }
         if (outcome === 'hit') stats.hits += 1;
         else if (outcome === 'miss') stats.misses += 1;
         else stats.writes += 1;
-        promCache.labels(prefix, outcome).inc();
+        stats[backend] += 1;
+        promCache.labels(prefix, outcome, backend).inc();
     }
 
     recordJob(

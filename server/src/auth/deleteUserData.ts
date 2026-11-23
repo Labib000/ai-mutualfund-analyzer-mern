@@ -1,6 +1,6 @@
+import { cacheForget, cacheForgetPrefix } from '../lib/cache.js';
 import { AiUsage } from '../models/aiUsage.js';
 import { Avatar } from '../models/avatar.js';
-import { CacheEntry } from '../models/cacheEntry.js';
 import { Holding } from '../models/holding.js';
 import { PasswordResetToken } from '../models/passwordResetToken.js';
 import { Sip } from '../models/sip.js';
@@ -23,11 +23,10 @@ export async function deleteUserData(user: UserDoc): Promise<void> {
         Avatar.deleteOne({ userId }),
         PasswordResetToken.deleteOne({ email: user.email }),
         // Cached AI answers and value history quote the user's own figures.
-        CacheEntry.deleteMany({
-            key: {
-                $in: [`ai-summary:${id}`, `portfolio-history:${id}`],
-            },
-        }),
-        CacheEntry.deleteMany({ key: new RegExp(`^ai-digest:${id}:`) }),
+        // Cleared from Mongo and Redis; if Redis is configured but down this
+        // throws, so the account isn't deleted and the user can retry, rather
+        // than leaving their figures behind in Redis.
+        cacheForget([`ai-summary:${id}`, `portfolio-history:${id}`]),
+        cacheForgetPrefix(`ai-digest:${id}:`),
     ]);
 }

@@ -23,12 +23,13 @@ import { SESSION_COLLECTION } from '../auth/sessions.js';
 import { ConfigError, loadConfig } from '../config.js';
 import { connectDb, disconnectDb } from '../db.js';
 import { addDays, addMonthsNoOverflow, isWeekday } from '../lib/dates.js';
+import { cacheForgetPrefix } from '../lib/cache.js';
 import { Decimal } from '../lib/decimal.js';
 import { REPO_ROOT } from '../lib/paths.js';
+import { connectRedis, disconnectRedis, waitForRedis } from '../lib/redis.js';
 import { now, today } from '../lib/today.js';
 import { AiUsage } from '../models/aiUsage.js';
 import { Avatar } from '../models/avatar.js';
-import { CacheEntry } from '../models/cacheEntry.js';
 import { Holding } from '../models/holding.js';
 import { NavHistory } from '../models/navHistory.js';
 import { Scheme } from '../models/scheme.js';
@@ -139,7 +140,7 @@ async function removeLoadData(): Promise<void> {
     ]);
     await User.deleteMany({ _id: { $in: userIds } });
     await Scheme.deleteMany({ _id: { $in: schemeIds } });
-    await CacheEntry.deleteMany({});
+    await cacheForgetPrefix('');
 
     console.log(
         `Removed ${userIds.length} load users and ${schemeIds.length} load schemes; emptied the cache.`,
@@ -357,16 +358,31 @@ async function main(): Promise<void> {
     const connection = await connectDb(config.MONGODB_URI);
     console.log(`Database "${connection.connection.name}"`);
 
+    // The cache may also live in Redis (R2): clear it there too.
+    if (config.REDIS_URL) {
+        connectRedis(config.REDIS_URL);
+        if (!(await waitForRedis())) {
+            console.error(
+                'REDIS_URL is set but Redis is not answering. Start it (npm run redis:up) or unset REDIS_URL.',
+            );
+            await disconnectRedis();
+            await disconnectDb();
+            process.exit(1);
+        }
+        console.log('Redis connected: its cache is cleared too.');
+    }
+
     try {
         if (values['clear-cache']) {
-            const { deletedCount } = await CacheEntry.deleteMany({});
-            console.log(`Emptied the cache (${deletedCount} entries).`);
+            const deleted = await cacheForgetPrefix('');
+            console.log(`Emptied the cache (${deleted} entries).`);
             return;
         }
 
         await removeLoadData();
         if (!values.reset) await seed({ users, holdings, years });
     } finally {
+        await disconnectRedis();
         await disconnectDb();
     }
 }

@@ -140,6 +140,8 @@ describe('/internal/metrics', () => {
             hits: 2,
             misses: 1,
             writes: 1,
+            redis: 0,
+            mongo: 4,
             hitRatio: 0.67,
         });
     });
@@ -183,7 +185,7 @@ describe('/internal/metrics', () => {
             /hisaab_mongodb_command_duration_seconds_count\{command="find",collection="holdings",failed="false"\} [1-9]/,
         );
         expect(res.text).toMatch(
-            /hisaab_cache_operations_total\{prefix="scheme-stats",outcome="miss"\} [1-9]/,
+            /hisaab_cache_operations_total\{prefix="scheme-stats",outcome="miss",backend="mongo"\} [1-9]/,
         );
         // Node's defaults, which the Grafana dashboard uses.
         expect(res.text).toContain('nodejs_eventloop_lag_p99_seconds');
