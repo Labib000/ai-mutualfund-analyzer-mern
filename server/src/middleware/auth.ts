@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
 
+import { getCachedUser, putCachedUser } from '../lib/userCache.js';
 import { User, type UserDoc } from '../models/user.js';
 
 declare module 'express-session' {
@@ -27,7 +28,13 @@ export const loadUser: RequestHandler = async (req, _res, next) => {
         return;
     }
 
-    const user = await User.findById(userId);
+    // Cached in Redis for 60 s (R5); hydrate() rebuilds a real document, so
+    // routes can still save() it. Without Redis this is one Mongo read.
+    const cached = await getCachedUser(userId);
+    const user: UserDoc | null = cached
+        ? User.hydrate(cached)
+        : await User.findById(userId);
+    if (user && !cached) await putCachedUser(userId, user.toObject());
 
     if (user) {
         req.user = user;

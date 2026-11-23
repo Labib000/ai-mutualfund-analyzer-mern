@@ -16,7 +16,7 @@
 
 It's a MERN (MongoDB, Express, React, Node) rebuild of an earlier Laravel app, written in TypeScript end to end.
 
-> **Status:** the tracker, insights and AI features are done, and so are monitoring and load testing. An optional Redis layer (Phase 4.4) is in progress. Fund document answers (RAG) are on hold until it's finished. See the [roadmap](#roadmap).
+> **Status:** the tracker, insights and AI features are done, and so are monitoring, load testing and an optional Redis layer. The last Redis step, repeating the measurements, is in progress. Fund document answers (RAG) are on hold until then. See the [roadmap](#roadmap).
 
 ## Contents
 
@@ -24,7 +24,7 @@ It's a MERN (MongoDB, Express, React, Node) rebuild of an earlier Laravel app, w
 - [Features](#features)
 - [How it works](#how-it-works)
 - [Scaling and monitoring](#scaling-and-monitoring)
-- [Redis (in progress)](#redis-in-progress)
+- [Redis](#redis)
 - [Tech stack](#tech-stack)
 - [Getting started](#getting-started)
 - [Scripts](#scripts)
@@ -38,8 +38,8 @@ It's a MERN (MongoDB, Express, React, Node) rebuild of an earlier Laravel app, w
 - **The numbers are exact.** Money is stored as integer paise, and NAVs and units as fixed-precision decimals, so there's no floating-point drift.
 - **The AI only explains.** It works from figures the app has already calculated, never recommends buying or selling, and always shows a disclaimer.
 - **It covers the whole market.** Daily NAVs for about 14,000 schemes come straight from AMFI.
-- **It runs on simple hosting.** There are no background workers or in-process schedulers, so one Node app is enough. Redis is planned as an optional extra: without it, everything runs on MongoDB.
-- **It's measured.** Every request's latency, database queries and cache use are tracked, and a load-testing setup with live Grafana dashboards shows how the app behaves under traffic.
+- **It runs on simple hosting.** There are no background workers or in-process schedulers, so one Node app is enough. Redis is an optional extra: without it, everything runs on MongoDB.
+- **It's measured.** Every request's latency, database queries and cache use are tracked. Load tests with live Grafana dashboards showed MongoDB was the bottleneck, and Redis cut p95 latency at 10 requests a second from 4.2 s to 0.57 s.
 
 ## Features
 
@@ -92,7 +92,7 @@ Register, email verification, password reset, profile and appearance settings (l
           |                |                |                     |         (local, for load tests)
           v                v                v                     v
     MongoDB Atlas      Redis          Groq API      AMFI and mfapi.in (NAV data)
-                   (planned, optional)
+                     (optional)
 ```
 
 The client and API share one origin, so there's one app to deploy.
@@ -107,7 +107,7 @@ The client and API share one origin, so there's one app to deploy.
 | Scheduled work through HTTP endpoints | The app can restart or idle without losing jobs |
 | XIRR using Newton-Raphson with a bisection fallback | Follows Excel's convention, and still finds an answer when Newton's method fails |
 | Metrics kept in the app with `prom-client`, read by Prometheus | Works on shared hosting: no agent to install, just one endpoint behind a secret |
-| Redis behind the existing cache, rate-limit and lock code, with a MongoDB fallback (planned) | Faster when Redis is there, and the app still works when it isn't |
+| Redis behind the existing cache, rate-limit and lock code, optional | Faster when Redis is there, and the app still works without it (see [Redis](#redis)) |
 
 ### Fund document answers (on hold)
 
@@ -172,8 +172,9 @@ The scenarios use an **open model** (k6's `constant-arrival-rate`). Requests kee
 - **k6:** what the client sees;
 - **routes:** latency and traffic per route;
 - **MongoDB:** queries per request and the slowest commands;
-- **cache:** hit ratio per cache;
-- **Node process:** event-loop lag, CPU, memory, GC.
+- **cache:** hit ratio per cache, and whether Redis or MongoDB served it;
+- **Node process:** event-loop lag, CPU, memory, GC;
+- **Redis:** calls a second and p95 per operation, and fallbacks to MongoDB.
 
 ### Try it
 
@@ -186,54 +187,90 @@ npm run load:server           # terminal 1: the built server
 npm run load -- mixed         # terminal 2: watch http://localhost:3001
 ```
 
-Each run also saves k6's summary and the server's metrics to `server/load/results/`. All the options are in [`server/load/README.md`](server/load/README.md).
+Add `REDIS_URL` to `.env` (and `npm run redis:up`) to run the same test with Redis. Each run also saves k6's summary and the server's metrics to `server/load/results/`. All the options are in [`server/load/README.md`](server/load/README.md).
 
 ### Results
 
-The MongoDB-only baseline is recorded first, against Atlas, so the Redis work has a fair "before". **Baseline pending.**
+Measured against MongoDB Atlas's free tier (M0), with 50 test users and a realistic `mixed` load. "Dropped" counts requests k6 couldn't start on time because the server had fallen behind.
 
-| Scenario | Store | Rate (req/s) | p50 | p95 | p99 | Errors | Cache hit ratio |
-|---|---|---|---|---|---|---|---|
-| dashboard (cold cache) | MongoDB | | | | | | |
-| dashboard (warm cache) | MongoDB | | | | | | |
-| mixed | MongoDB | | | | | | |
-| mixed | Redis | | | | | | |
+**MongoDB only: where one instance breaks.**
 
-## Redis (in progress)
+| Rate (req/s) | p50 | p95 | Dropped | Errors |
+|---|---|---|---|---|
+| 5 | 454 ms | 688 ms | 0 | 0% |
+| 10 | 590 ms | **4.2 s** | 35 | 0% |
+| 15 | 2.3 s | 5.8 s | 50 | 0% |
+| 20 | 4.2 s | 9.1 s | 243 | 0% |
 
-Today the cache, the rate limits and the job locks are all MongoDB round trips. Redis keeps them in memory, so each one becomes a fast local-network call. This phase is also a deliberate learning exercise, so each step starts with studying the concept.
+The limit was between 5 and 10 requests a second. CPU and the event loop stayed healthy, so the bottleneck was the database: even a cache hit was a round trip to Atlas.
 
-**Design:**
+**With Redis, at 10 requests a second:**
 
-- **Optional.** With `REDIS_URL` unset, everything stays on MongoDB as it is now, so shared hosting still works.
-- **Behind the existing code.** Redis slots in behind the cache, rate-limit store and job lock (`cache.ts`, `rateLimitStore.ts`, `jobLock.ts`), so nothing that calls them changes.
-- **Falls back.** If Redis errors, MongoDB takes over, and the app keeps working with Redis stopped.
+| | MongoDB only | With Redis |
+|---|---|---|
+| p50 | 590 ms | **254 ms** |
+| p95 | 4.2 s | **571 ms** |
+| Dropped | 35 | 2 |
+| Errors | 0% | 0% |
+
+**What each Redis step removed** (database operation counts, which are steadier than latency):
+
+| Step | Before | After |
+|---|---|---|
+| Cache | Every cache hit was an Atlas query | Cache hits never touch Atlas |
+| Rate limits | 6 Atlas operations per login | 4 |
+| User lookup | 7.25 Atlas operations per request (`find users` on every request) | 6.25 (`find users` on 4% of requests) |
+
+These are single runs on a shared free-tier cluster, so latencies vary between runs. The last Redis step repeats them and finds the new limit.
+
+## Redis
+
+Redis is an in-memory store, so reading from it takes about a millisecond on the local network. Hisaab uses it for the small, hot data that was costing an Atlas round trip on every request. It's **optional**: with `REDIS_URL` unset, everything runs on MongoDB exactly as before, so simple shared hosting still works.
+
+### What's in Redis
+
+| What | Why Redis | Redis technique | If Redis is down |
+|---|---|---|---|
+| **Cache** (portfolio history, fund stats, comparisons, AI answers) | Hits are read on most page loads | `SET … PX` with a JSON value; `SCAN` (never `KEYS`) to delete by prefix | Each call falls back to MongoDB |
+| **Rate limits** (login, AI, password reset…) | A counter is written on every limited request | `INCR` + `PEXPIRE … NX` + `PTTL` in one `MULTI`; a Lua script to take a hit back | Falls back to MongoDB; limits are briefly looser, but nobody is locked out |
+| **Job lock** (NAV import, SIP generation) | Stops two runs overlapping | `SET … NX PX` with a random owner; a Lua compare-and-delete to release | **The job is skipped** (503) and the next cron call retries. A MongoDB fallback could let two runs overlap |
+| **Logged-in user** (loaded on every request) | Read on every API request | A 60-second copy as EJSON; cleared by hooks on the User model whenever a user changes | Falls back to MongoDB |
+
+All keys start with `hisaab:` and every key expires, so Redis can always free memory.
+
+### Why sessions stay in MongoDB
+
+Session reads were about 14% of Atlas time, so moving sessions to Redis looked tempting. But a cache can be rebuilt and a session can't: it's the only copy of a login. If sessions lived in Redis, an outage, a restart (this Redis has no persistence) or memory pressure (it evicts expiring keys) would log people out. That breaks the rule that "Redis down means slower, never broken". So sessions stay in MongoDB, and the user document each request loads is cached instead. It saves about as much, and it can always fall back.
+
+### Design rules
+
+- **Optional, behind the existing code.** Redis sits behind `cache.ts`, `rateLimitStore.ts`, `jobLock.ts` and `userCache.ts`, so the routes that use them didn't change.
+- **Fails fast.** Commands time out after 500 ms and don't queue while disconnected, so a Redis problem can never stall a request. The client reconnects by itself.
+- **Fall back where it's safe, fail closed where it isn't.** The cache, rate limits and user lookup fall back to MongoDB. The job lock refuses to run instead, because correctness matters more than one skipped run.
 - **Our own stores**, not ready-made packages (`rate-limit-redis`, `connect-redis`), so each Redis pattern is written and understood.
-- **Docker** (`redis:7-alpine`) for development and tests, and a hosted Redis (Upstash, Mumbai) in production, through `ioredis`.
+- **Same tests, both stores.** Each store has one test suite that runs against MongoDB and, when `REDIS_URL` is set, against Redis.
+- **Visible.** `/api/health` reports `"redis": "up" | "down" | "disabled"` (it stays 200 when Redis is down), and every Redis call and fallback shows on the Grafana dashboard.
+
+### Progress
 
 | Step | What | Status |
 |---|---|---|
-| R0 | Study: Docker basics, Redis data types, cache-aside | In progress |
-| R1 | Connection: optional `REDIS_URL`, a health check, Docker Compose, metrics | ✅ Done |
-| R2 | Cache: a `CacheStore` interface with MongoDB and Redis versions | ✅ Done |
-| R3 | Rate limits: `INCR` + `PEXPIRE` in one `MULTI`, same fixed window | ✅ Done |
-| R4 | Job lock: `SET NX PX` to take it, a Lua compare-and-delete to release it; fails closed | ✅ Done |
-| R5 | Sessions: decide whether to move them, and write up why | Planned |
-| R6 | Measure: before and after, with the tooling above | Tooling done, results pending |
+| R1 | Connection, health check, Docker Compose, metrics | ✅ Done |
+| R2 | Cache | ✅ Done |
+| R3 | Rate limits | ✅ Done |
+| R4 | Job lock | ✅ Done |
+| R5 | Sessions: measured, kept in MongoDB; user lookup cached instead | ✅ Done |
+| R6 | Repeat the measurements and find the new limit | In progress |
 
-The same tests run against both the MongoDB and Redis versions of each store. The Redis cases are skipped when Redis isn't available.
+### Try it
 
-**What R1 gives:**
+```bash
+npm run redis:up                                  # Redis 7 in Docker on localhost:6379
+echo "REDIS_URL=redis://localhost:6379" >> .env   # then restart npm run dev
+npm run redis:cli                                 # look inside: KEYS hisaab:* (fine locally)
+```
 
-- **Fails fast.** The client is set up so Redis can never slow a request down:
-  - it connects in the background, so the app starts even when Redis is down;
-  - commands fail at once while disconnected instead of queueing;
-  - any command over 500 ms fails;
-  - it reconnects by itself, backing off up to 5 seconds.
-- **Health check.** `/api/health` reports `"redis": "up" | "down" | "disabled"`. Redis being down doesn't make the app "degraded", because it falls back to MongoDB.
-- **Metrics.** Every Redis call is timed, each fallback to MongoDB is counted, and both appear on the Grafana dashboard.
-
-Run Redis locally with `npm run redis:up`, then add `REDIS_URL=redis://localhost:6379` to `.env`.
+Development and tests use Docker (`redis:7-alpine`). In production, a hosted Redis such as Upstash works through the same `REDIS_URL`.
 
 ## Tech stack
 
@@ -241,7 +278,7 @@ Run Redis locally with `npm run redis:up`, then add `REDIS_URL=redis://localhost
 |---|---|
 | Client | React, React Router, TanStack Query, Tailwind CSS, shadcn/ui (Radix), Recharts, Motion, Font Awesome |
 | Server | Node.js 24, Express 5, Mongoose, Zod, decimal.js, argon2, pino, express-session with connect-mongo |
-| Database | MongoDB (Atlas); Redis planned as an optional cache |
+| Database | MongoDB (Atlas); Redis (optional, through `ioredis`) for the cache, rate limits, job lock and user lookup |
 | AI | Groq, with Gemini embeddings for the RAG work |
 | Shared | `@hisaab/shared`: types, money and date helpers used by both sides |
 | Monitoring | prom-client, Prometheus, Grafana, k6, Docker Compose |
@@ -289,7 +326,7 @@ Fill in `.env`:
 | `MAIL_*` | Optional locally: without SMTP details, emails are written to `logs/mail.log` |
 | `AI_API_KEY` | Optional. A free [Groq API key](https://console.groq.com/keys) for the AI features; without one they say the AI is unavailable. The other `AI_*` settings have working defaults (see `.env.example`) |
 | `GEMINI_API_KEY` | Optional, and not used yet. A [Gemini API key](https://aistudio.google.com/apikey) for the RAG work |
-| `REDIS_URL` | Optional. `redis://localhost:6379` locally (`npm run redis:up`), or `rediss://…` from Upstash. Holds the cache (R2), rate-limit counters (R3) and job locks (R4) |
+| `REDIS_URL` | Optional. `redis://localhost:6379` locally (`npm run redis:up`), or `rediss://…` from Upstash. Turns on Redis for the cache, rate limits, job locks and the logged-in user (see [Redis](#redis)) |
 | `COMPARE_RISK_FREE_RATE` | Optional. The yearly risk-free rate (%) for Sharpe and Sortino on the compare page; defaults to 6.5 |
 
 ### Load fund data and a demo user
@@ -340,7 +377,7 @@ curl -X POST -H "X-Cron-Secret: $CRON_SECRET" https://your-app.example/internal/
 curl -X POST -H "X-Cron-Secret: $CRON_SECRET" https://your-app.example/internal/jobs/sips-generate
 ```
 
-A lock in the database stops two runs of the same job from overlapping.
+A lock stops two runs of the same job from overlapping: a second call gets `409`. The lock lives in Redis when `REDIS_URL` is set, otherwise in MongoDB. If Redis is set but unreachable, the job is skipped with `503` and the next scheduled call runs it. The CLI versions (`npm run job:…`) use the same lock.
 
 ## Testing
 
@@ -357,9 +394,11 @@ Server tests run against an in-memory MongoDB replica set, so they need no setup
 - [x] **Phase 2:** core tracker: NAV import, holdings, transactions, SIPs, dashboard
 - [x] **Phase 3:** insights, fund facts (1/3/5-year returns, volatility, drawdown), period changes, financial-year gains
 - [x] **Phase 4:** AI: ask questions about your portfolio, summaries, fund explanations
-- [ ] **Phase 4.4:** optional Redis layer, in progress
+- [ ] **Phase 4.4:** optional Redis layer, almost done
   - [x] monitoring and load-testing tooling (metrics, k6, Prometheus, Grafana)
-  - [ ] Redis cache, rate limits and job lock, with before and after numbers
+  - [x] MongoDB-only baseline
+  - [x] Redis cache, rate limits, job lock and user lookup; sessions decided (they stay in MongoDB)
+  - [ ] repeat the measurements and find the new limit
 - [ ] **Phase 4.5:** fund document answers with citations (RAG), on hold
 - [ ] **Phase 5:** Pro plan with Razorpay
 - [ ] **Phase 6:** 2FA and passkeys, deployment
